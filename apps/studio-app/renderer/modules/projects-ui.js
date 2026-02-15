@@ -10,7 +10,9 @@ export function getActiveChat() {
   const project = getActiveProject();
   const chats = project.chats || [];
   if (chats.length === 0) return null;
-  return chats.find(c => c.id === (project.activeChatId || state.activeChatId)) || chats[0] || null;
+  // Prefer runtime state.activeChatId over persisted project.activeChatId
+  // to avoid stale config values after operations that refresh config
+  return chats.find(c => c.id === (state.activeChatId || project.activeChatId)) || chats[0] || null;
 }
 
 export function renderChats() {
@@ -80,15 +82,18 @@ export function renderChats() {
     btn.addEventListener("click", async () => {
       if (chat.id === state.activeChatId) return;
       await saveCurrentProjectHistory();
-      // Prompt stashing
+      // Prompt stashing (composite key: project + chat)
       const currentPrompt = String(el.promptInput.value || "");
-      const stashKey = `${state.activeProjectId}_${state.activeChatId}`;
+      const stashKey = state.activeChatId
+        ? `${state.activeProjectId}_${state.activeChatId}`
+        : state.activeProjectId;
       if (currentPrompt) state.promptStash.set(stashKey, currentPrompt);
       state.activeChatId = chat.id;
       state.config = await window.uxRoaiStudio.setActiveChat(project.id, chat.id);
       const restoreKey = `${state.activeProjectId}_${chat.id}`;
       el.promptInput.value = state.promptStash.get(restoreKey) || "";
       el.promptInput.style.height = "auto";
+      state.lastTasksFingerprint = "";
       renderChats();
       await refreshTasks();
     });
@@ -111,9 +116,18 @@ export function renderChats() {
           label: t("deleteChat"),
           danger: true,
           action: async () => {
+            // Remove queued messages for this chat
+            state.messageQueue = state.messageQueue.filter(
+              msg => String(msg.chatId || "") !== String(chat.id)
+            );
+            // Remove tasks for deleted chat from state.tasks
+            state.tasks = state.tasks.filter(
+              tk => String(tk.chatId || "") !== String(chat.id)
+            );
             state.config = await window.uxRoaiStudio.deleteChat(project.id, chat.id);
             const updatedProject = (state.config?.projects || []).find(p => p.id === project.id);
             state.activeChatId = updatedProject?.activeChatId || null;
+            state.lastTasksFingerprint = "";
             renderChats();
             await refreshTasks();
           },
@@ -229,10 +243,13 @@ export async function submitCreateProject() {
   const name = String(el.projectNameInput.value || "").trim();
   if (!name) return;
   try {
+    await saveCurrentProjectHistory();
     state.config = await window.uxRoaiStudio.createProject(name);
     state.activeProjectId = state.config.activeProjectId;
+    state.activeChatId = null; // New project has no chats
     updateProjectTitle();
     renderProjects();
+    state.lastTasksFingerprint = "";
     renderTasks();
     closeProjectModal();
   } catch (error) {
@@ -275,17 +292,27 @@ function buildProjectButton(project) {
   });
   button.addEventListener("click", async () => {
     await saveCurrentProjectHistory();
-    // Prompt stashing: save current text, restore target's
+    // Prompt stashing: save current text with composite key
     const currentPrompt = String(el.promptInput.value || "");
-    if (currentPrompt) state.promptStash.set(state.activeProjectId, currentPrompt);
+    const stashKey = state.activeChatId
+      ? `${state.activeProjectId}_${state.activeChatId}`
+      : state.activeProjectId;
+    if (currentPrompt) state.promptStash.set(stashKey, currentPrompt);
     state.activeProjectId = project.id;
     state.config = await window.uxRoaiStudio.setActiveProject(project.id);
-    const stashed = state.promptStash.get(project.id) || "";
+    // Restore activeChatId from the target project
+    const targetProject = (state.config.projects || []).find(p => p.id === project.id);
+    state.activeChatId = targetProject?.activeChatId || null;
+    const restoreKey = state.activeChatId
+      ? `${project.id}_${state.activeChatId}`
+      : project.id;
+    const stashed = state.promptStash.get(restoreKey) || "";
     el.promptInput.value = stashed;
     el.promptInput.style.height = "auto";
     if (stashed) {
       el.promptInput.style.height = Math.min(el.promptInput.scrollHeight, 200) + "px";
     }
+    state.lastTasksFingerprint = "";
     updateProjectTitle();
     renderProjects();
     await refreshTasks();
@@ -321,9 +348,17 @@ function buildProjectButton(project) {
             state.config = await window.uxRoaiStudio.createProject(project.name + " (copy)");
             const newProj = state.config.projects[0];
             if (newProj) {
+              // Copy project-level history
               const history = await window.uxRoaiStudio.loadTaskHistory(project.id);
               if (Array.isArray(history) && history.length > 0) {
                 await window.uxRoaiStudio.saveTaskHistory(newProj.id, history);
+              }
+              // Copy chat-specific history files
+              for (const chat of (project.chats || [])) {
+                const chatHistory = await window.uxRoaiStudio.loadChatHistory(project.id, chat.id);
+                if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+                  await window.uxRoaiStudio.saveChatHistory(newProj.id, chat.id, chatHistory);
+                }
               }
               if (project.folderId) {
                 state.config = await window.uxRoaiStudio.setProjectFolder(newProj.id, project.folderId);
@@ -340,7 +375,12 @@ function buildProjectButton(project) {
         danger: true,
         action: async () => {
           try {
+            // Clear project-level history
             await window.uxRoaiStudio.saveTaskHistory(project.id, []);
+            // Clear all chat-specific history files
+            for (const chat of (project.chats || [])) {
+              await window.uxRoaiStudio.saveChatHistory(project.id, chat.id, []);
+            }
             state.tasks = state.tasks.filter(
               (tk) => String(tk.projectId || "default") !== String(project.id)
             );
@@ -361,6 +401,9 @@ function buildProjectButton(project) {
           const remaining = state.config?.projects || [];
           state.activeProjectId = remaining.length > 0 ? remaining[0].id : "default";
           state.config = await window.uxRoaiStudio.setActiveProject(state.activeProjectId);
+          // Restore activeChatId from the new active project
+          const newProject = (state.config?.projects || []).find(p => p.id === state.activeProjectId);
+          state.activeChatId = newProject?.activeChatId || null;
           updateProjectTitle();
           renderProjects();
           renderTasks();

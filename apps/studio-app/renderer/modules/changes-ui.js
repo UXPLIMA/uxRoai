@@ -107,7 +107,7 @@ export function renderChanges(container, changes) {
           revertBtn.disabled = true;
           try {
             const revertPrompt = `__revert__ ${changePath}`;
-            await window.uxRoaiStudio.createTask(revertPrompt, state.activeProjectId, [], []);
+            await window.uxRoaiStudio.createTask(revertPrompt, state.activeProjectId, [], [], state.activeChatId);
             showToast(t("revertSuccess"), "warning");
           } catch (err) {
             showToast(err.message || "Revert failed", "error");

@@ -28,9 +28,9 @@ function buildMultiTurnMessages(conversationTurns, userContent) {
   return messages;
 }
 
-async function callClaudeApiRaw(apiKey, payload, externalSignal) {
+async function callClaudeApiRaw(apiKey, payload, externalSignal, timeoutMs) {
   const controller = new AbortController();
-  const fetchTimeout = setTimeout(() => controller.abort(), 900_000);
+  const fetchTimeout = setTimeout(() => controller.abort(), timeoutMs || 900_000);
   // Wire external abort signal (from task stop) to this controller
   if (externalSignal) {
     if (externalSignal.aborted) { clearTimeout(fetchTimeout); controller.abort(); }

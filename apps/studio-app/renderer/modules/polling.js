@@ -119,43 +119,84 @@ export function mergeTasks(liveTasks, savedTasks) {
   return result;
 }
 
+let _saveInProgress = false;
+
 export async function saveCurrentProjectHistory() {
+  // Guard against concurrent saves corrupting history
+  if (_saveInProgress) return;
+  _saveInProgress = true;
   try {
+    // Capture state snapshot at call time to prevent mid-execution state changes
+    const projectId = state.activeProjectId;
+    const chatId = state.activeChatId;
     const project = getActiveProject();
     if (project.id === "__none__") return;
-    const projectTasks = state.tasks.filter(
-      (task) => String(task.projectId || "default") === String(project.id)
+
+    const allProjectTasks = state.tasks.filter(
+      (task) => String(task.projectId || "default") === String(projectId)
     );
-    const finishedTasks = projectTasks.filter(
+    const allFinished = allProjectTasks.filter(
       (task) => task.status === "done" || task.status === "failed" || task.status === "stopped"
     );
-    if (finishedTasks.length > 0) {
-      if (state.activeChatId) {
-        await window.uxRoaiStudio.saveChatHistory(project.id, state.activeChatId, finishedTasks);
-      } else {
-        await window.uxRoaiStudio.saveTaskHistory(project.id, finishedTasks);
+
+    if (allFinished.length === 0) return;
+
+    const chats = project.chats || [];
+    if (chats.length > 0) {
+      // Save active chat's tasks (full overwrite — we have complete state for active chat)
+      if (chatId) {
+        const activeChatTasks = allFinished.filter(
+          (task) => task.chatId && String(task.chatId) === String(chatId)
+        );
+        await window.uxRoaiStudio.saveChatHistory(projectId, chatId, activeChatTasks);
       }
-      for (const task of finishedTasks) {
-        if (task.status === "done" && task.result?.summary && !task._memorySaved) {
-          task._memorySaved = true;
-          await autoSaveMemoryFromTask(task);
+
+      // Persist finished tasks from OTHER chats that are in agent memory
+      // (append-only: load existing, merge new, save — prevents data loss on agent restart)
+      for (const chat of chats) {
+        if (chat.id === chatId) continue; // already saved above
+        const otherTasks = allFinished.filter(
+          (task) => task.chatId && String(task.chatId) === String(chat.id)
+        );
+        if (otherTasks.length === 0) continue;
+        const existing = await window.uxRoaiStudio.loadChatHistory(projectId, chat.id);
+        const existingIds = new Set((existing || []).map(t => t.id));
+        const newTasks = otherTasks.filter(t => !existingIds.has(t.id));
+        if (newTasks.length > 0) {
+          const merged = [...(existing || []), ...newTasks];
+          merged.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+          await window.uxRoaiStudio.saveChatHistory(projectId, chat.id, merged);
         }
+      }
+    } else {
+      // No chats: save to project-level file
+      await window.uxRoaiStudio.saveTaskHistory(projectId, allFinished);
+    }
+
+    for (const task of allFinished) {
+      if (task.status === "done" && task.result?.summary && !task._memorySaved) {
+        task._memorySaved = true;
+        await autoSaveMemoryFromTask(task);
       }
     }
   } catch {
     // silent
+  } finally {
+    _saveInProgress = false;
   }
 }
 
-async function loadProjectHistory() {
+async function loadProjectHistory(projectId, chatId) {
   try {
-    const project = getActiveProject();
-    if (project.id === "__none__") return [];
+    const pid = projectId || state.activeProjectId;
+    const cid = chatId !== undefined ? chatId : state.activeChatId;
+    const project = (state.config?.projects || []).find(p => p.id === pid);
+    if (!project || pid === "__none__") return [];
     let saved;
-    if (state.activeChatId) {
-      saved = await window.uxRoaiStudio.loadChatHistory(project.id, state.activeChatId);
+    if (cid) {
+      saved = await window.uxRoaiStudio.loadChatHistory(pid, cid);
     } else {
-      saved = await window.uxRoaiStudio.loadTaskHistory(project.id);
+      saved = await window.uxRoaiStudio.loadTaskHistory(pid);
     }
     return Array.isArray(saved) ? saved : [];
   } catch {
@@ -215,12 +256,25 @@ export function startPolling(intervalMs) {
 }
 
 let sessionReconstructed = false;
+let _refreshInProgress = false;
 
 export async function refreshTasks() {
+  // Guard against concurrent refreshes (polling timer + SSE + manual calls)
+  if (_refreshInProgress) return;
+  _refreshInProgress = true;
   try {
+    // Capture state snapshot at entry to prevent mid-execution state changes
+    const snapshotProjectId = state.activeProjectId;
+    const snapshotChatId = state.activeChatId;
+
     const data = await window.uxRoaiStudio.listTasks(120);
     const liveTasks = Array.isArray(data?.tasks) ? data.tasks : [];
-    const savedTasks = await loadProjectHistory();
+    const savedTasks = await loadProjectHistory(snapshotProjectId, snapshotChatId);
+
+    // Bail out if user switched project/chat during our async operations
+    if (state.activeProjectId !== snapshotProjectId || state.activeChatId !== snapshotChatId) {
+      return;
+    }
 
     // Session reconstruction: if agent has no tasks but we have saved history,
     // it means the agent was restarted. Saved tasks become the sole source.
@@ -287,6 +341,8 @@ export async function refreshTasks() {
     }
   } catch (error) {
     console.error(error);
+  } finally {
+    _refreshInProgress = false;
   }
 }
 
@@ -381,7 +437,9 @@ async function triggerAutoPlaytest(taskId) {
     const prompt = `Run a playtest to verify the changes from the previous task: "${String(completedTask.prompt || "").slice(0, 200)}"`;
     const { buildConversationHistory } = await import("./composer.js");
     const history = buildConversationHistory(4);
-    await window.uxRoaiStudio.createTask(prompt, state.activeProjectId, history, []);
+    // Use the completed task's chatId, not the currently viewed chat
+    const taskChatId = completedTask.chatId || state.activeChatId;
+    await window.uxRoaiStudio.createTask(prompt, state.activeProjectId, history, [], taskChatId);
     await refreshTasks();
   } catch {
     // silent - don't interrupt user flow
@@ -638,6 +696,8 @@ export function setupGlobalEvents() {
     const project = getActiveProject();
     if (project.id === "__none__") return;
     try {
+      // Save current chat's history before switching to new chat
+      await saveCurrentProjectHistory();
       const chatNum = (project.chats || []).length + 1;
       state.config = await window.uxRoaiStudio.createChat(project.id, `Chat ${chatNum}`);
       const updatedProject = (state.config.projects || []).find(p => p.id === project.id);
@@ -754,23 +814,29 @@ export function setupGlobalEvents() {
       }
       const next = projects[nextIdx];
       if (next) {
-        saveCurrentProjectHistory();
-        // Prompt stashing
-        const currentPrompt = String(el.promptInput.value || "");
-        if (currentPrompt) state.promptStash.set(state.activeProjectId, currentPrompt);
-        state.activeProjectId = next.id;
-        window.uxRoaiStudio.setActiveProject(next.id).then(cfg => {
+        (async () => {
+          await saveCurrentProjectHistory();
+          // Prompt stashing (use composite key with chatId)
+          const currentPrompt = String(el.promptInput.value || "");
+          const stashKey = state.activeChatId
+            ? `${state.activeProjectId}_${state.activeChatId}`
+            : state.activeProjectId;
+          if (currentPrompt) state.promptStash.set(stashKey, currentPrompt);
+          state.activeProjectId = next.id;
+          const cfg = await window.uxRoaiStudio.setActiveProject(next.id);
           state.config = cfg;
           // Restore activeChatId from the new project
           const activeProject = (cfg.projects || []).find(p => p.id === next.id);
           state.activeChatId = activeProject?.activeChatId || null;
-          const stashed = state.promptStash.get(next.id) || "";
-          el.promptInput.value = stashed;
+          const restoreKey = state.activeChatId
+            ? `${next.id}_${state.activeChatId}`
+            : next.id;
+          el.promptInput.value = state.promptStash.get(restoreKey) || "";
           el.promptInput.style.height = "auto";
           updateProjectTitle();
           renderProjects();
-          refreshTasks();
-        });
+          await refreshTasks();
+        })();
       }
       return;
     }

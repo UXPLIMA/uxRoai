@@ -60,6 +60,7 @@ export function validateStudioTaskCreateRequest(body) {
   }
 
   const projectId = safeString(body?.projectId, "default").slice(0, 120) || "default";
+  const chatId = safeString(body?.chatId).slice(0, 120) || undefined;
   const source = safeString(body?.source, "desktop").slice(0, 120) || "desktop";
 
   const maxRetries = Number.isFinite(Number(body?.maxRetries))
@@ -91,6 +92,7 @@ export function validateStudioTaskCreateRequest(body) {
   return {
     prompt: prompt.slice(0, 12000),
     projectId,
+    ...(chatId && { chatId }),
     source,
     history: parseHistory(body?.history),
     attachments,

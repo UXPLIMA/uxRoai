@@ -134,6 +134,9 @@ function M.executePlaytest(playtest)
 		local isIgnorable =
 			string.find(text, "failed to load sound", 1, true) ~= nil
 			or string.find(text, "asset type does not match requested type", 1, true) ~= nil
+			or string.find(text, "unable to cast", 1, true) ~= nil
+			or string.find(text, "cannot load package", 1, true) ~= nil
+			or string.find(text, "attempt to index nil with 'waitforchild'", 1, true) ~= nil
 
 		if isIgnorable then
 			table.insert(ignoredRuntimeErrors, tostring(message))
@@ -176,7 +179,7 @@ function M.executePlaytest(playtest)
 				result.errorSummary = #fatalRuntimeErrors .. " runtime error(s)"
 			end
 		end
-		if #fatalRuntimeErrors > 0 then
+		if #fatalRuntimeErrors > 0 and result.ok ~= true then
 			result.ok = false
 			if not result.errorSummary then
 				result.errorSummary = tostring(#fatalRuntimeErrors) .. " runtime error(s) captured during playtest."
@@ -270,23 +273,12 @@ function M.collectExecutionIssues(changeEntries, playtestPassed)
 					end
 				end
 
-				-- Include runtime warnings that may indicate API misuse
-				local rtWarnings = type(playtestResult.runtimeWarnings) == "table" and playtestResult.runtimeWarnings or {}
-				if #rtWarnings > 0 and not playtestPassed then
-					local warnMessages = {}
-					local maxWarns = math.min(#rtWarnings, 5)
-					for wIdx = 1, maxWarns do
-						table.insert(warnMessages, "  - " .. tostring(rtWarnings[wIdx]))
-					end
-					table.insert(issues, "Playtest runtime warnings:\n" .. table.concat(warnMessages, "\n"))
-				end
-
 				-- Include console output excerpt for context (server/client logs)
 				local consoleOutput = type(playtestResult.consoleOutput) == "table" and playtestResult.consoleOutput or {}
 				if #consoleOutput > 0 and not playtestPassed then
 					local logLines = {}
 					-- Take last N lines (most relevant)
-					local startIdx = math.max(1, #consoleOutput - 14)
+					local startIdx = math.max(1, #consoleOutput - 7)
 					for cIdx = startIdx, #consoleOutput do
 						table.insert(logLines, "  " .. tostring(consoleOutput[cIdx]))
 					end

@@ -8,22 +8,43 @@ function register() {
     return readTaskHistory(id);
   });
 
-  ipcMain.handle("tasks:history:delete", (_event, projectId, taskId) => {
-    const tasks = readTaskHistory(projectId || "default");
-    const filtered = tasks.filter((t) => String(t.id) !== String(taskId));
-    writeTaskHistory(projectId || "default", filtered);
+  // Delete a task from project-level history
+  ipcMain.handle("tasks:history:delete", (_event, projectId, taskId, chatId) => {
+    const pid = projectId || "default";
+    if (chatId) {
+      const tasks = readChatHistory(pid, chatId);
+      const filtered = tasks.filter((t) => String(t.id) !== String(taskId));
+      writeChatHistory(pid, chatId, filtered);
+    } else {
+      const tasks = readTaskHistory(pid);
+      const filtered = tasks.filter((t) => String(t.id) !== String(taskId));
+      writeTaskHistory(pid, filtered);
+    }
     return { ok: true };
   });
 
-  ipcMain.handle("tasks:history:rename", (_event, projectId, taskId, newPrompt) => {
-    const tasks = readTaskHistory(projectId || "default");
-    for (const task of tasks) {
-      if (String(task.id) === String(taskId)) {
-        task.prompt = String(newPrompt || "").slice(0, 12000);
-        break;
+  // Rename a task's prompt in history
+  ipcMain.handle("tasks:history:rename", (_event, projectId, taskId, newPrompt, chatId) => {
+    const pid = projectId || "default";
+    if (chatId) {
+      const tasks = readChatHistory(pid, chatId);
+      for (const task of tasks) {
+        if (String(task.id) === String(taskId)) {
+          task.prompt = String(newPrompt || "").slice(0, 12000);
+          break;
+        }
       }
+      writeChatHistory(pid, chatId, tasks);
+    } else {
+      const tasks = readTaskHistory(pid);
+      for (const task of tasks) {
+        if (String(task.id) === String(taskId)) {
+          task.prompt = String(newPrompt || "").slice(0, 12000);
+          break;
+        }
+      }
+      writeTaskHistory(pid, tasks);
     }
-    writeTaskHistory(projectId || "default", tasks);
     return { ok: true };
   });
 

@@ -4,13 +4,14 @@ import {
   OPENAI_API_URL,
   getOpenaiApiKey,
   getCodexModel,
+  getCodexTimeoutMs,
   readImageAsBase64,
   getImageMediaType,
   getImageAttachments,
   consumeSSEStream,
 } from "./base.js";
 
-export async function callOpenaiApiJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments, onToken, apiKeyOverride, conversationTurns }) {
+export async function callOpenaiApiJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments, onToken, apiKeyOverride, conversationTurns, signal }) {
   const apiKey = apiKeyOverride || getOpenaiApiKey();
   if (!apiKey) throw new Error("OPENAI_API_KEY is missing");
 
@@ -56,7 +57,11 @@ export async function callOpenaiApiJson({ systemPrompt, userPrompt, maxTokens = 
   };
 
   const controller = new AbortController();
-  const fetchTimeout = setTimeout(() => controller.abort(), 900_000);
+  const fetchTimeout = setTimeout(() => controller.abort(), getCodexTimeoutMs());
+  if (signal) {
+    if (signal.aborted) { clearTimeout(fetchTimeout); controller.abort(); }
+    else signal.addEventListener("abort", () => { clearTimeout(fetchTimeout); controller.abort(); }, { once: true });
+  }
 
   let response;
   try {

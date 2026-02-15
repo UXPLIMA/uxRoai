@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const { ipcMain } = require("electron");
-const { readConfig, writeConfig, buildConfigResponse, getTaskHistoryPath, getChatHistoryPath } = require("../config.js");
+const { readConfig, writeConfig, buildConfigResponse, getTaskHistoryPath, getChatHistoryPath, deleteAllProjectFiles } = require("../config.js");
 
 function register() {
   ipcMain.handle("project:create", (_event, name) => {
@@ -18,6 +18,8 @@ function register() {
 
   ipcMain.handle("project:delete", (_event, projectId) => {
     const current = readConfig();
+    // Find the project being deleted to get its chats list for cleanup
+    const deletedProject = (current.projects || []).find((p) => p.id === projectId);
     const projects = (current.projects || []).filter((p) => p.id !== projectId);
     const activeProjectId =
       current.activeProjectId === projectId
@@ -26,14 +28,8 @@ function register() {
           : "__none__"
         : current.activeProjectId;
     const config = writeConfig({ ...current, projects, activeProjectId });
-    try {
-      const historyPath = getTaskHistoryPath(projectId);
-      if (fs.existsSync(historyPath)) {
-        fs.unlinkSync(historyPath);
-      }
-    } catch {
-      // silent
-    }
+    // Delete all project files: main history, all chat histories, memory
+    deleteAllProjectFiles(projectId, deletedProject?.chats);
     return buildConfigResponse(config);
   });
 

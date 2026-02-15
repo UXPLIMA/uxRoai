@@ -31,12 +31,17 @@ export async function processNextQueuedMessage() {
   updateQueueIndicator();
   if (!next) return;
   try {
+    // Build history using the queued message's chatId, not the current activeChatId
+    // (user may have switched chats since the message was queued)
+    const savedChatId = state.activeChatId;
+    state.activeChatId = next.chatId || savedChatId;
     const history = buildConversationHistory(8);
+    state.activeChatId = savedChatId;
     const memory = await loadProjectMemory();
     const historyWithMemory = memory.length > 0
       ? [{ prompt: "[PROJECT MEMORY]", summary: memory.map(m => m.text).join(" | "), status: "memory" }, ...history]
       : history;
-    await window.uxRoaiStudio.createTask(next.prompt, state.activeProjectId, historyWithMemory, next.attachments || []);
+    await window.uxRoaiStudio.createTask(next.prompt, state.activeProjectId, historyWithMemory, next.attachments || [], next.chatId);
     await refreshTasks();
   } catch (err) {
     showToast(err.message || t("taskSendFailed"), "error");
@@ -45,9 +50,15 @@ export async function processNextQueuedMessage() {
 
 export function buildConversationHistory(maxMessages = 8) {
   const project = getActiveProject();
-  const projectTasks = state.tasks.filter(
+  let projectTasks = state.tasks.filter(
     (task) => String(task.projectId || "default") === String(project.id)
   );
+  // Strict chat isolation: only include tasks from this specific chat
+  if (state.activeChatId) {
+    projectTasks = projectTasks.filter(
+      (task) => task.chatId && String(task.chatId) === String(state.activeChatId)
+    );
+  }
   const finished = projectTasks.filter(
     (task) => task.status === "done" || task.status === "failed" || task.status === "stopped"
   );
@@ -242,6 +253,7 @@ export function setupComposerEvents() {
       id: askId,
       prompt: question,
       projectId,
+      chatId: state.activeChatId || null,
       status: "running",
       createdAt: new Date().toISOString(),
       progress: [{ type: "thinking", message: t("processing") }],
@@ -257,13 +269,13 @@ export function setupComposerEvents() {
     try {
       const result = await window.uxRoaiStudio.askQuestion(question, askHistory);
       fakeTask = {
-        id: askId, prompt: question, projectId, status: "done",
+        id: askId, prompt: question, projectId, chatId: state.activeChatId || null, status: "done",
         createdAt: placeholderTask.createdAt, finishedAt: new Date().toISOString(),
         result: { ok: true, summary: result?.answer || "No response", changes: [], warnings: [], actionCount: 0 },
       };
     } catch (askErr) {
       fakeTask = {
-        id: askId, prompt: question, projectId, status: "failed",
+        id: askId, prompt: question, projectId, chatId: state.activeChatId || null, status: "failed",
         createdAt: placeholderTask.createdAt, finishedAt: new Date().toISOString(),
         result: { ok: false, summary: askErr.message || "Ask failed", changes: [], warnings: [], actionCount: 0 },
       };
@@ -272,15 +284,17 @@ export function setupComposerEvents() {
     const idx = state.tasks.findIndex((t2) => t2.id === askId);
     if (idx >= 0) state.tasks[idx] = fakeTask;
     else state.tasks.push(fakeTask);
-    // Save to the correct history (chat-aware)
-    if (state.activeChatId) {
-      const existingHistory = await window.uxRoaiStudio.loadChatHistory(projectId, state.activeChatId);
-      const tasks = Array.isArray(existingHistory) ? existingHistory : [];
+    // Save fakeTask to disk immediately (ask tasks don't go through the agent,
+    // so refreshTasks() wouldn't find them and they'd be lost on next merge)
+    const saveChatId = state.activeChatId;
+    if (saveChatId) {
+      const existing = await window.uxRoaiStudio.loadChatHistory(projectId, saveChatId);
+      const tasks = Array.isArray(existing) ? existing.filter(t => t.id !== askId) : [];
       tasks.push(fakeTask);
-      await window.uxRoaiStudio.saveChatHistory(projectId, state.activeChatId, tasks);
+      await window.uxRoaiStudio.saveChatHistory(projectId, saveChatId, tasks);
     } else {
-      const existingHistory = await window.uxRoaiStudio.loadTaskHistory(projectId);
-      const tasks = Array.isArray(existingHistory) ? existingHistory : [];
+      const existing = await window.uxRoaiStudio.loadTaskHistory(projectId);
+      const tasks = Array.isArray(existing) ? existing.filter(t => t.id !== askId) : [];
       tasks.push(fakeTask);
       await window.uxRoaiStudio.saveTaskHistory(projectId, tasks);
     }
@@ -313,7 +327,7 @@ export function setupComposerEvents() {
     const historyWithMemory = memory.length > 0
       ? [{ prompt: "[PROJECT MEMORY]", summary: memory.map(m => m.text).join(" | "), status: "memory" }, ...history]
       : history;
-    await window.uxRoaiStudio.createTask(prompt, state.activeProjectId, historyWithMemory, attachmentData);
+    await window.uxRoaiStudio.createTask(prompt, state.activeProjectId, historyWithMemory, attachmentData, state.activeChatId);
     autoTitleChat(prompt);
     await refreshTasks();
   }

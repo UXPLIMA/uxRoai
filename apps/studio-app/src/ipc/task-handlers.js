@@ -36,7 +36,7 @@ function register() {
     }
   });
 
-  ipcMain.handle("tasks:create", async (_event, prompt, projectId, history, attachments) => {
+  ipcMain.handle("tasks:create", async (_event, prompt, projectId, history, attachments, chatId) => {
     const config = readConfig();
     const text = String(prompt || "").trim();
     if (!text) {
@@ -51,6 +51,7 @@ function register() {
         history: Array.isArray(history) ? history.slice(0, 10) : [],
         attachments: Array.isArray(attachments) ? attachments.slice(0, 20) : [],
       };
+      if (chatId) payload.chatId = String(chatId);
       if (Number.isFinite(config.maxRetries)) payload.maxRetries = config.maxRetries;
       if (Number.isFinite(config.minPlaytestSeconds)) payload.minPlaytestSeconds = config.minPlaytestSeconds;
       if (Number.isFinite(config.planTimeoutSec)) payload.planTimeoutSec = config.planTimeoutSec;

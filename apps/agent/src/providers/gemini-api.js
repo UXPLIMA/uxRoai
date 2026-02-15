@@ -4,13 +4,14 @@ import {
   GEMINI_API_URL,
   getGeminiApiKey,
   getGeminiModel,
+  getGeminiTimeoutMs,
   readImageAsBase64,
   getImageMediaType,
   getImageAttachments,
   consumeSSEStream,
 } from "./base.js";
 
-export async function callGeminiApiJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments, onToken }) {
+export async function callGeminiApiJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments, onToken, signal }) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing");
 
@@ -55,7 +56,11 @@ export async function callGeminiApiJson({ systemPrompt, userPrompt, maxTokens = 
   const url = `${GEMINI_API_URL}/models/${encodeURIComponent(model)}:${endpoint}?key=${encodeURIComponent(apiKey)}${altParam}`;
 
   const controller = new AbortController();
-  const fetchTimeout = setTimeout(() => controller.abort(), 900_000);
+  const fetchTimeout = setTimeout(() => controller.abort(), getGeminiTimeoutMs());
+  if (signal) {
+    if (signal.aborted) { clearTimeout(fetchTimeout); controller.abort(); }
+    else signal.addEventListener("abort", () => { clearTimeout(fetchTimeout); controller.abort(); }, { once: true });
+  }
 
   let response;
   try {

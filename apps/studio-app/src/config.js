@@ -210,6 +210,11 @@ function readConfig() {
 function writeConfig(nextConfig) {
   const configPath = getConfigPath();
   const normalized = normalizeAllConfig(nextConfig);
+  // Preserve complex structures that normalizeAllConfig doesn't handle
+  normalized.projects = Array.isArray(nextConfig.projects) && nextConfig.projects.length > 0
+    ? nextConfig.projects
+    : [{ id: "default", name: "Default" }];
+  normalized.folders = Array.isArray(nextConfig.folders) ? nextConfig.folders : [];
   fs.writeFileSync(configPath, JSON.stringify(normalized, null, 2), "utf8");
   return normalized;
 }
@@ -267,6 +272,32 @@ function writeMemory(projectId, entries) {
   fs.writeFileSync(filePath, JSON.stringify(safe, null, 2), "utf8");
 }
 
+function deleteChatHistoryFile(projectId, chatId) {
+  try {
+    const filePath = getChatHistoryPath(projectId, chatId);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch { /* silent */ }
+}
+
+function deleteAllProjectFiles(projectId, chats) {
+  // Delete main project history
+  try {
+    const mainPath = getTaskHistoryPath(projectId);
+    if (fs.existsSync(mainPath)) fs.unlinkSync(mainPath);
+  } catch { /* silent */ }
+  // Delete all chat history files
+  if (Array.isArray(chats)) {
+    for (const chat of chats) {
+      if (chat && chat.id) deleteChatHistoryFile(projectId, chat.id);
+    }
+  }
+  // Delete memory file
+  try {
+    const memPath = getMemoryPath(projectId);
+    if (fs.existsSync(memPath)) fs.unlinkSync(memPath);
+  } catch { /* silent */ }
+}
+
 module.exports = {
   normalizeAgentUrl,
   normalizeClaudeProvider,
@@ -295,4 +326,6 @@ module.exports = {
   writeChatHistory,
   readMemory,
   writeMemory,
+  deleteChatHistoryFile,
+  deleteAllProjectFiles,
 };

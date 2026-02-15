@@ -587,15 +587,26 @@ local function executePromptPlan(prompt, conversationHistory, maxAttempts, minPl
 			break
 		end
 
-		local issueFingerprint = table.concat(issues, "|")
+		-- Normalize issues for fingerprinting: strip line numbers, stack traces, timing info
+		local function normalizeForFingerprint(text)
+			local s = tostring(text)
+			s = s:gsub(":%d+:", ":_:") -- strip line numbers like :42:
+			s = s:gsub("line %d+", "line _") -- strip "line 42"
+			s = s:gsub("%d+%.%d+s", "_s") -- strip timing like 1.5s
+			s = s:gsub("%(last %d+ lines%)", "(last _ lines)") -- strip console line counts
+			return s
+		end
+		local normalizedIssues = {}
+		for _, iss in ipairs(issues) do
+			table.insert(normalizedIssues, normalizeForFingerprint(iss))
+		end
+		local issueFingerprint = table.concat(normalizedIssues, "|")
 		if attempt > 1 and issueFingerprint == previousIssueFingerprint then
 			sameFailureCount = sameFailureCount + 1
-			if sameFailureCount >= 2 then
-				UI.appendLog("Same failure repeated " .. tostring(sameFailureCount) .. " times, stopping auto-repair.")
+			if sameFailureCount >= 1 then
+				UI.appendLog("Same failure repeated " .. tostring(sameFailureCount + 1) .. " times, stopping auto-repair.")
 				pushUnique(warningList, warningSeen, "Auto-repair stopped: identical failure repeated (likely an environment/timing limitation, not a code bug)")
 				break
-			else
-				UI.appendLog("Same failure detected (repeat " .. tostring(sameFailureCount) .. "/2), retrying with different approach...")
 			end
 		else
 			sameFailureCount = 0

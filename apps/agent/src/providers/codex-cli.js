@@ -16,7 +16,7 @@ export function hasCodexCliConfig() {
   return hasCommandInPath(command);
 }
 
-export async function callCodexCliJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments }) {
+export async function callCodexCliJson({ systemPrompt, userPrompt, maxTokens = 2000, attachments, signal }) {
   const command = getCodexCommand();
   if (!command) throw new Error("CODEX_COMMAND is missing");
 
@@ -40,6 +40,7 @@ export async function callCodexCliJson({ systemPrompt, userPrompt, maxTokens = 2
     args,
     timeoutMs: getCodexTimeoutMs(),
     stdinData: combinedPrompt,
+    signal,
   });
 
   const combined = [stdout, stderr].filter(Boolean).join("\n").trim();

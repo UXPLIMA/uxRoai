@@ -46,11 +46,12 @@ function generateTaskId() {
   return `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createStudioTask({ prompt, projectId = "default", source = "desktop", history, attachments, projectApiKey, projectCustomPrompt }) {
+export function createStudioTask({ prompt, projectId = "default", chatId, source = "desktop", history, attachments, projectApiKey, projectCustomPrompt, maxRetries, minPlaytestSeconds, planTimeoutSec }) {
   const task = {
     id: generateTaskId(),
     prompt,
     projectId,
+    chatId: chatId || null,
     source,
     history: Array.isArray(history) ? history.slice(0, MAX_HISTORY_ENTRIES) : [],
     attachments: Array.isArray(attachments) ? attachments.slice(0, MAX_ATTACHMENTS) : [],
@@ -65,6 +66,9 @@ export function createStudioTask({ prompt, projectId = "default", source = "desk
     planDecision: null,
     projectApiKey: projectApiKey || null,
     projectCustomPrompt: projectCustomPrompt || null,
+    ...(maxRetries != null ? { maxRetries } : {}),
+    ...(minPlaytestSeconds != null ? { minPlaytestSeconds } : {}),
+    ...(planTimeoutSec != null ? { planTimeoutSec } : {}),
   };
 
   tasks.push(task);

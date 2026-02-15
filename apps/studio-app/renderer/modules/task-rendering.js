@@ -448,7 +448,7 @@ function renderQuickActions(chatChanges, task, normalizedStatus, result) {
   undoBtn.addEventListener("click", async () => {
     undoBtn.disabled = true;
     try {
-      await window.uxRoaiStudio.createTask("__undo__", state.activeProjectId, [], []);
+      await window.uxRoaiStudio.createTask("__undo__", state.activeProjectId, [], [], state.activeChatId);
       showToast("Undo command sent", "warning");
       await refreshTasks();
     } catch (err) {
@@ -471,7 +471,15 @@ function renderQuickActions(chatChanges, task, normalizedStatus, result) {
       const newConfig = await window.uxRoaiStudio.createProject(branchName);
       const newProject = newConfig?.projects?.[0];
       if (newProject?.id) {
-        const allTasks = state.tasks || [];
+        // Filter tasks by current chat to avoid including other chats' tasks
+        let allTasks = (state.tasks || []).filter(
+          t2 => String(t2.projectId || "default") === String(state.activeProjectId)
+        );
+        if (state.activeChatId) {
+          allTasks = allTasks.filter(
+            t2 => t2.chatId && String(t2.chatId) === String(state.activeChatId)
+          );
+        }
         const taskIdx = allTasks.findIndex(t2 => t2.id === task.id);
         const branchHistory = taskIdx >= 0 ? allTasks.slice(0, taskIdx + 1) : allTasks;
         const historyToSave = branchHistory.filter(t2 => t2.status === "done" || t2.status === "failed").map(t2 => ({
@@ -574,10 +582,10 @@ export function renderTasks() {
 
   const project = getActiveProject();
   let filteredTasks = state.tasks.filter((task) => String(task.projectId || "default") === String(project.id));
-  // Filter by chat if multi-chat is active
+  // Strict chat filter: only show tasks that belong to this specific chat
   if (state.activeChatId && (project.chats || []).length > 0) {
     filteredTasks = filteredTasks.filter((task) =>
-      !task.chatId || task.chatId === state.activeChatId
+      task.chatId && String(task.chatId) === String(state.activeChatId)
     );
   }
 
@@ -630,19 +638,25 @@ export function renderTasks() {
         e.stopPropagation();
         const accepted = await showRewindModal(task.prompt);
         if (!accepted) return;
-        // Truncate timeline: remove all tasks after this one
+        // Truncate timeline: remove all tasks after this one (filtered by chat)
         const projectId = getActiveProject().id;
-        const allProjectTasks = state.tasks.filter(
+        const chatId = state.activeChatId || null;
+        let allProjectTasks = state.tasks.filter(
           (tk) => String(tk.projectId || "default") === String(projectId)
         );
+        // Filter by chat to avoid touching other chats' tasks
+        if (chatId) {
+          allProjectTasks = allProjectTasks.filter(
+            (tk) => tk.chatId && String(tk.chatId) === String(chatId)
+          );
+        }
         const taskIdx = allProjectTasks.findIndex(tk => String(tk.id) === String(task.id));
         if (taskIdx >= 0) {
           const toRemove = allProjectTasks.slice(taskIdx);
           for (const tk of toRemove) {
-            await window.uxRoaiStudio.deleteTaskHistory(projectId, String(tk.id));
+            await window.uxRoaiStudio.deleteTaskHistory(projectId, String(tk.id), chatId);
           }
           state.tasks = state.tasks.filter(tk => {
-            if (String(tk.projectId || "default") !== String(projectId)) return true;
             return !toRemove.some(r => String(r.id) === String(tk.id));
           });
         }
@@ -684,7 +698,7 @@ export function renderTasks() {
             const prompt = foundTask?.prompt || task.prompt || "";
             if (prompt) {
               try {
-                await window.uxRoaiStudio.createTask(prompt, projectId, [], []);
+                await window.uxRoaiStudio.createTask(prompt, projectId, [], [], state.activeChatId);
                 await refreshTasks();
               } catch (err) {
                 showToast(err.message || "Re-run failed", "error");
@@ -698,7 +712,7 @@ export function renderTasks() {
             const oldPrompt = foundTask ? (foundTask.prompt || "") : "";
             const newText = await showPromptModal(t("renameChat"), oldPrompt);
             if (newText) {
-              await window.uxRoaiStudio.renameTaskHistory(projectId, tid, newText);
+              await window.uxRoaiStudio.renameTaskHistory(projectId, tid, newText, state.activeChatId);
               await refreshTasks();
             }
           },
@@ -707,8 +721,9 @@ export function renderTasks() {
           label: t("deleteChat"),
           danger: true,
           action: async () => {
-            await window.uxRoaiStudio.deleteTaskHistory(projectId, tid);
+            await window.uxRoaiStudio.deleteTaskHistory(projectId, tid, state.activeChatId);
             state.tasks = state.tasks.filter((tk) => String(tk.id) !== tid);
+            state.lastTasksFingerprint = "";
             renderTasks();
           },
         },
