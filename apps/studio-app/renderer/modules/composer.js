@@ -62,6 +62,20 @@ export function buildConversationHistory(maxMessages = 8) {
     if (Array.isArray(task.result?.changes) && task.result.changes.length > 0) {
       entry.changeTypes = task.result.changes
         .map(c => c.type).filter(Boolean).slice(0, 10).join(", ");
+      // Include script paths so AI knows exactly which scripts were created/modified
+      const scriptChanges = task.result.changes
+        .filter(c => c.type === "upsert_script" || c.type === "edit_script")
+        .map(c => c.scriptPath || c.path || "")
+        .filter(Boolean)
+        .slice(0, 8);
+      if (scriptChanges.length > 0) entry.scriptPaths = scriptChanges;
+      // Include instance paths for create/delete actions
+      const instanceChanges = task.result.changes
+        .filter(c => c.type === "create_instance" || c.type === "delete_instance" || c.type === "mass_create")
+        .map(c => c.path || c.name || "")
+        .filter(Boolean)
+        .slice(0, 8);
+      if (instanceChanges.length > 0) entry.instancePaths = instanceChanges;
     }
     return entry;
   });

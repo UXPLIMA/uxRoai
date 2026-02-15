@@ -94,7 +94,7 @@ function M.serializeInstance(instance, depth, maxChildren, budget)
 			return instance.Source
 		end)
 		if ok and type(source) == "string" then
-			node.sourcePreview = string.sub(source, 1, 1200)
+			node.sourcePreview = string.sub(source, 1, 4000)
 			node.sourceLength = #source
 		end
 	end

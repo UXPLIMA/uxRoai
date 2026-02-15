@@ -74,6 +74,15 @@ table, string, math, print, warn, error, tostring, tonumber, type, pairs, ipairs
 - Do NOT return values. The harness collects results automatically.
 - All assertions pass → test passes. Any fail → test fails.
 
+═══ CRITICAL RULES (MUST FOLLOW — violations cause test failures) ═══
+1. The \`player\` variable is ALREADY defined and available in serverTest. It is the real Player object. NEVER write \`Players:WaitForChild("Player1")\`, \`Players:FindFirstChild("...")\`, or any hardcoded player name. The player's name in Studio is the developer's own username — you do NOT know it. Always use the \`player\` global directly.
+2. ONLY call functions listed in the helpers section above. Do NOT invent, assume, or guess that any other function exists. If you write \`someFunction()\` and it is not listed above, the test WILL crash with "attempt to call a nil value". Double-check every function call against the helper list.
+3. To access player leaderstats/values, build the path using \`player.Name\`: \`resolvePath("game.Players." .. player.Name .. ".leaderstats.Score")\`. NEVER hardcode a player name in paths.
+4. Keep assertions SIMPLE. Only verify: (a) instances exist, (b) instances are destroyed after touch, (c) basic property values, (d) values changed (increased/decreased). Do NOT assert complex game logic like RespawnLocation changes, BestTime recordings, race finish detection, or multi-step state machines. These are timing-dependent and WILL fail.
+5. For collectibles: touchTarget → task.wait(1) → assert_not_exists. This is the most reliable pattern.
+6. For score/value changes: read BEFORE → touchTarget → task.wait(1) → read AFTER → assert_true(after > before or after ~= before).
+7. NEVER assert exact numeric values after touchTarget (not "== 10", not "increased by 10"). Always use relative comparisons (>, <, ~=).
+
 ═══ WRITING TEST CODE ═══
 1. Start server tests with task.wait(3), client tests with task.wait(5)
 2. Use exact dot-notation paths: "game.Workspace.Coins.Coin_1" (server), "ShopHUD.ShopFrame.ItemList" (client)
@@ -83,13 +92,17 @@ table, string, math, print, warn, error, tostring, tonumber, type, pairs, ipairs
 6. Do NOT test task.delay callbacks or delayed respawns — unreliable in StudioTestService
 7. Server test cannot see PlayerGui. Client test cannot see ServerScriptService.
 8. Use null for clientTest if only server-side verification is needed.
+9. Do NOT use pcall around assert_* helpers — they never throw errors. pcall is only needed around Roblox API calls you're unsure about.
+10. Do NOT use game:GetService("Players"):WaitForChild(...) — use the \`player\` global.
 
 ═══ TIMING & SPAWN WARNINGS ═══
+- The \`player\` global is ALREADY set and ready. Character is spawned. Do NOT wait for or find the player yourself.
 - The player spawns at a safe staging area (0, 500, 0) far from all game objects. Leaderstats/values WILL be at their initial state when the test starts.
 - touchTarget teleports the player INTO the target object. This may trigger Touched events MULTIPLE TIMES (e.g. +10 score fires 2x = +20). NEVER assert exact increments after touchTarget.
-- Instead: read the value BEFORE touch, call touchTarget, wait, read AFTER, then assert value CHANGED (increased/decreased). Example: local scoreBefore = resolvePath("game...Score").Value \n touchTarget(...) \n task.wait(1) \n local scoreAfter = resolvePath("game...Score").Value \n assert_true(scoreAfter > scoreBefore, "Score increased")
+- Instead: read the value BEFORE touch, call touchTarget, wait, read AFTER, then assert value CHANGED (increased/decreased). Example: local scoreBefore = resolvePath("game.Players." .. player.Name .. ".leaderstats.Score").Value \n touchTarget(player, "game.Workspace.Platform") \n task.wait(1) \n local scoreAfter = resolvePath("game.Players." .. player.Name .. ".leaderstats.Score").Value \n assert_true(scoreAfter > scoreBefore, "Score increased")
 - For collectibles/kill bricks: touchTarget → task.wait(1) → assert_not_exists (object destroyed) or assert health changed.
 - NEVER assert exact numeric values like "Score == 10" or "Score increased by 10" after touchTarget. Always use relative comparisons (>, <, ~=).
+- NEVER test RespawnLocation, delayed respawns, or multi-frame state transitions. These are timing-dependent and unreliable in StudioTestService.
 
 ═══ EXAMPLES ═══
 
@@ -105,7 +118,15 @@ Score verification after touch (server only — CORRECT pattern):
 {
   "goal": "Touch platform and verify score increases",
   "timeoutSeconds": 120,
-  "serverTest": "task.wait(3)\\nassert_exists(\\"game.Workspace.Platform\\", \\"Platform exists\\")\\nlocal scoreVal = resolvePath(\\"game.Players\\" .. \\".\\\" .. player.Name .. \\".leaderstats.Score\\")\\nassert_true(scoreVal ~= nil, \\"Score value exists\\")\\nlocal before = scoreVal.Value\\nlog(\\"Score before: \\" .. tostring(before))\\ntouchTarget(player, \\"game.Workspace.Platform\\")\\ntask.wait(1)\\nlocal after = scoreVal.Value\\nlog(\\"Score after: \\" .. tostring(after))\\nassert_true(after > before, \\"Score increased after touch\\")",
+  "serverTest": "task.wait(3)\\nassert_exists(\\"game.Workspace.Platform\\", \\"Platform exists\\")\\nlocal playerPath = \\"game.Players.\\" .. player.Name\\nlocal scoreVal = resolvePath(playerPath .. \\".leaderstats.Score\\")\\nassert_true(scoreVal ~= nil, \\"Score value exists\\")\\nlocal before = scoreVal.Value\\nlog(\\"Score before: \\" .. tostring(before))\\ntouchTarget(player, \\"game.Workspace.Platform\\")\\ntask.wait(1)\\nlocal after = scoreVal.Value\\nlog(\\"Score after: \\" .. tostring(after))\\nassert_true(after > before, \\"Score increased after touch\\")",
+  "clientTest": null
+}
+
+Simple existence test (server only — SAFEST pattern for complex games):
+{
+  "goal": "Verify checkpoint and leaderboard structure exists",
+  "timeoutSeconds": 60,
+  "serverTest": "task.wait(3)\\nassert_exists(\\"game.Workspace.Checkpoints\\", \\"Checkpoints folder exists\\")\\nassert_exists(\\"game.Workspace.Checkpoints.Checkpoint1\\", \\"Checkpoint1 exists\\")\\nlocal playerPath = \\"game.Players.\\" .. player.Name\\nassert_exists(playerPath .. \\".leaderstats\\", \\"Leaderstats exist\\")\\nassert_exists(playerPath .. \\".leaderstats.Stage\\", \\"Stage value exists\\")\\nlog(\\"All game structure verified\\")",
   "clientTest": null
 }
 

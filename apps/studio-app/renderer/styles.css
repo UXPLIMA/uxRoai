@@ -854,7 +854,7 @@ h1 {
   transition: color 0.12s, background 0.12s;
 }
 
-.chat-bubble-user:hover .chat-edit-btn {
+.chat-user:hover .chat-edit-btn {
   display: flex;
 }
 

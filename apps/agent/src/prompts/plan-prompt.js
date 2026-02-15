@@ -184,13 +184,22 @@ Client assertions:
 - assert_gui_text(guiPath, expected, label), assert_gui_text_contains(guiPath, substring, label)
 - assert_gui_property(guiPath, property, expected, label)
 
+CRITICAL TEST RULES (MUST FOLLOW — violations cause test crashes):
+- The \`player\` variable is ALREADY defined in serverTest. NEVER use \`Players:WaitForChild("Player1")\` or any hardcoded player name. The player's name is the developer's own username — you do NOT know it. Use \`player\` directly.
+- ONLY call functions listed in the helper lists above. Do NOT invent functions. Every undefined call crashes with "attempt to call a nil value".
+- To access leaderstats: \`resolvePath("game.Players." .. player.Name .. ".leaderstats.Score")\`. NEVER hardcode player names in paths.
+- Keep assertions SIMPLE: verify instances exist, are destroyed after touch, or values changed. Do NOT assert RespawnLocation changes, BestTime recordings, or multi-step state machines — they are timing-dependent and WILL fail.
+- NEVER assert exact numeric values after touchTarget. Use relative comparisons (>, <, ~=).
+
 WRITING TEST CODE:
 - Start with task.wait(3) for initialization (task.wait(5) for client tests)
 - Use exact dot-notation paths: "game.Workspace.Coins.Coin_1" (server), "ShopHUD.ShopFrame.BuyButton" (client GUI)
 - Keep under 60 lines each. Use \\n for newlines in JSON strings.
 - touchTarget for collecting items, assert_not_exists after to verify destruction
+- For score changes: read BEFORE → touchTarget → task.wait(1) → read AFTER → assert_true(after > before)
 - clickButton requires test hooks — ensure your LocalScripts register BindableEvent hooks
 - Do NOT test delayed respawns or task.delay callbacks — StudioTestService doesn't reliably fire them
+- Do NOT use pcall around assert_* helpers — they never throw. Only use pcall for Roblox API calls.
 - Server test sees server-side instances only. Client test sees PlayerGui and local state.
 
 ═══ SELECTION AWARENESS ═══
@@ -305,12 +314,20 @@ export function buildPlanUserPrompt(prompt, studioContext, history) {
       const lines = convEntries.map((entry, i) => {
         const status = entry.status || "unknown";
         const summary = entry.summary ? `: ${entry.summary}` : "";
-        return `  ${i + 1}. "${entry.prompt}" → ${status}${summary}`;
+        let line = `  ${i + 1}. "${entry.prompt}" → ${status}${summary}`;
+        // Include script and instance paths for precise context
+        if (Array.isArray(entry.scriptPaths) && entry.scriptPaths.length > 0) {
+          line += `\n     Scripts: ${entry.scriptPaths.join(", ")}`;
+        }
+        if (Array.isArray(entry.instancePaths) && entry.instancePaths.length > 0) {
+          line += `\n     Instances: ${entry.instancePaths.join(", ")}`;
+        }
+        return line;
       });
       parts.push(
         "=== CONVERSATION HISTORY ===",
         ...lines,
-        "Build upon previous work. Do not recreate existing instances.",
+        "Build upon previous work. Do not recreate existing instances. Use edit_script for scripts listed above.",
         ""
       );
     }

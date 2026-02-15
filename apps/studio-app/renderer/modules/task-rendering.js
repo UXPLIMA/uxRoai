@@ -751,7 +751,9 @@ export function renderTasks() {
       rawCopyBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const text = result ? safeJson(result, "") : "";
+        // Copy visible content (works during running tasks too, not just finished)
+        const rawEl = rawCopyBtn.closest(".chat-conversation")?.querySelector(".chat-raw-content");
+        const text = rawEl ? rawEl.textContent : (result ? safeJson(result, "") : "");
         copyToClipboard(text, rawCopyBtn);
       });
     }

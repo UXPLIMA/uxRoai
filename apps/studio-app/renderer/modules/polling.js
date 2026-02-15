@@ -187,6 +187,19 @@ function updateVolatileContent(tasks) {
   }
 }
 
+// Check if user has active text selection inside the timeline
+// (prevents DOM rebuild from destroying selection or in-progress copy operations)
+function hasActiveSelectionInTimeline() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return false;
+  try {
+    const range = sel.getRangeAt(0);
+    return el.timeline && el.timeline.contains(range.startContainer);
+  } catch {
+    return false;
+  }
+}
+
 let pollTimer = null;
 let sseConnected = false;
 
@@ -246,12 +259,19 @@ export async function refreshTasks() {
 
     const fp = buildTasksFingerprint(merged);
     if (fp !== state.lastTasksFingerprint) {
-      state.lastTasksFingerprint = fp;
-      state.taskUiSnapshot = captureTaskUiSnapshot();
-      state.tasks = merged;
-      renderTasks();
-      renderChats();
-      await saveCurrentProjectHistory();
+      // Defer full DOM rebuild if user has active text selection (copying, selecting)
+      // to prevent destroying selection or interrupting copy-to-clipboard operations
+      if (hasActiveSelectionInTimeline()) {
+        state.tasks = merged;
+        updateVolatileContent(merged);
+      } else {
+        state.lastTasksFingerprint = fp;
+        state.taskUiSnapshot = captureTaskUiSnapshot();
+        state.tasks = merged;
+        renderTasks();
+        renderChats();
+        await saveCurrentProjectHistory();
+      }
     } else {
       state.tasks = merged;
       // Lightweight update: refresh only volatile content (streaming text, timers)
