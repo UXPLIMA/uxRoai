@@ -720,13 +720,34 @@ local function runDesktopInboxFlow(options)
 	local prompt = tostring(claimedTask.prompt or "")
 
 	if prompt == "__undo__" then
-		local undoSteps = math.max(1, UI.planWaypointCount - 1)
+		local undoSteps = UI.planWaypointCount
+		if undoSteps <= 0 then
+			-- Nothing to undo
+			local reportPayload = {
+				ok = true,
+				summary = "Nothing to undo (no previous plan in this session)",
+				warnings = {},
+				actionCount = 0,
+				playtestResult = nil,
+				changes = {},
+				actions = {},
+				logs = UI.copyRecentLogLines(10),
+				metadata = { worker = "uxroai-studio-plugin", reportedAt = os.time() },
+			}
+			pcall(requestJson, "/v1/studio/tasks/" .. tostring(claimedTask.id) .. "/result", reportPayload, "POST")
+			currentDesktopTaskId = nil
+			UI.appendLog("Nothing to undo — no waypoints recorded")
+			return
+		end
 		undoSteps = math.min(undoSteps, 200)
+		UI.appendLog("Undoing " .. tostring(undoSteps) .. " waypoint(s)...")
 		local undoOk, undoErr = pcall(function()
 			for _ = 1, undoSteps do
 				ChangeHistoryService:Undo()
 			end
 		end)
+		-- Store count before reset so second undo can redo the same plan via Roblox undo history
+		local previousCount = UI.planWaypointCount
 		UI.planWaypointCount = 0
 		local reportPayload = {
 			ok = undoOk,
@@ -742,7 +763,9 @@ local function runDesktopInboxFlow(options)
 		pcall(requestJson, "/v1/studio/tasks/" .. tostring(claimedTask.id) .. "/result", reportPayload, "POST")
 		currentDesktopTaskId = nil
 		if undoOk then
-			UI.appendLog("Undo completed for task " .. tostring(claimedTask.id))
+			UI.appendLog("Undo completed: " .. tostring(undoSteps) .. " steps reverted")
+		else
+			UI.appendLog("Undo failed: " .. tostring(undoErr))
 		end
 		return
 	end

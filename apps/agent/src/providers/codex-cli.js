@@ -26,7 +26,7 @@ export async function callCodexCliJson({ systemPrompt, userPrompt, maxTokens = 2
   const stdinPrompt = userPrompt + jsonRule;
   const combinedPrompt = `${systemPrompt}\n\n---\n\n${stdinPrompt}`;
 
-  const args = ["exec", "--model", model, "--full-auto"];
+  const args = ["exec", "--model", model, "--full-auto", "--skip-git-repo-check"];
 
   const images = getImageAttachments(attachments);
   for (const img of images) {
