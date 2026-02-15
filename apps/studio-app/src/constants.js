@@ -31,7 +31,7 @@ const SUPPORTED_GEMINI_MODELS = [
   "gemini-2.5-flash-lite",
 ];
 
-const SUPPORTED_CLAUDE_PROVIDERS = ["code", "api", "codex", "openai-api", "gemini", "gemini-api"];
+const SUPPORTED_CLAUDE_PROVIDERS = ["code", "codex", "gemini"];
 const SUPPORTED_LANGUAGES = ["en", "tr"];
 
 const DEFAULT_AGENT_URL = "http://127.0.0.1:41117";

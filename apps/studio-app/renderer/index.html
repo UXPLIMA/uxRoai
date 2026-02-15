@@ -133,12 +133,9 @@
         <input id="agentUrlInput" class="text-input" placeholder="http://127.0.0.1:41117" />
         <label id="claudeProviderLabelText" class="input-label" for="claudeProviderInput">AI Provider</label>
         <select id="claudeProviderInput" class="text-input">
-          <option value="code" selected>Claude Code (subscription)</option>
-          <option value="api">Claude API Key</option>
+          <option value="code" selected>Claude Code</option>
           <option value="codex">Codex CLI</option>
-          <option value="openai-api">OpenAI API Key</option>
           <option value="gemini">Gemini CLI</option>
-          <option value="gemini-api">Gemini API Key</option>
         </select>
         <div id="claudeFieldsGroup">
           <label id="claudeCodeCommandLabelText" class="input-label" for="claudeCodeCommandInput">Claude Code Command</label>
@@ -147,22 +144,16 @@
           <input id="claudeCodeArgsInput" class="text-input" placeholder="-p" />
           <label id="claudeCodeTimeoutLabelText" class="input-label" for="claudeCodeTimeoutInput">CLI Timeout (s)</label>
           <input id="claudeCodeTimeoutInput" class="text-input" type="number" min="5" max="600" value="90" />
-          <label id="claudeApiKeyLabelText" class="input-label" for="claudeApiKeyInput">Claude API Key</label>
-          <input id="claudeApiKeyInput" type="password" class="text-input" placeholder="sk-ant-..." />
         </div>
         <div id="codexFieldsGroup" style="display:none">
           <label id="codexCommandLabelText" class="input-label" for="codexCommandInput">Codex Command</label>
           <input id="codexCommandInput" class="text-input" placeholder="codex" />
-          <label id="openaiApiKeyLabelText" class="input-label" for="openaiApiKeyInput">OpenAI API Key</label>
-          <input id="openaiApiKeyInput" type="password" class="text-input" placeholder="sk-..." />
           <label id="codexTimeoutLabelText" class="input-label" for="codexTimeoutInput">CLI Timeout (s)</label>
           <input id="codexTimeoutInput" class="text-input" type="number" min="5" max="600" value="180" />
         </div>
         <div id="geminiFieldsGroup" style="display:none">
           <label id="geminiCommandLabelText" class="input-label" for="geminiCommandInput">Gemini Command</label>
           <input id="geminiCommandInput" class="text-input" placeholder="gemini" />
-          <label id="geminiApiKeyLabelText" class="input-label" for="geminiApiKeyInput">Gemini API Key</label>
-          <input id="geminiApiKeyInput" type="password" class="text-input" placeholder="AIza..." />
           <label id="geminiTimeoutLabelText" class="input-label" for="geminiTimeoutInput">CLI Timeout (s)</label>
           <input id="geminiTimeoutInput" class="text-input" type="number" min="5" max="600" value="300" />
         </div>
@@ -314,12 +305,9 @@
           <h2 id="setupCliTitleText">AI Provider</h2>
           <p id="setupCliDescText">Select your AI provider and configure it.</p>
           <select id="setupProviderSelect" class="text-input">
-            <option value="code">Claude Code (subscription)</option>
-            <option value="api">Claude API Key</option>
+            <option value="code">Claude Code</option>
             <option value="codex">Codex CLI</option>
-            <option value="openai-api">OpenAI API Key</option>
             <option value="gemini">Gemini CLI</option>
-            <option value="gemini-api">Gemini API Key</option>
           </select>
         </div>
 

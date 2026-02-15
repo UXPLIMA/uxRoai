@@ -57,17 +57,14 @@ function normalizeTimeoutSeconds(value, defaultVal, maxVal = 600) {
   return Math.max(5, Math.min(maxVal, Math.round(num)));
 }
 
-const normalizeClaudeApiKey = createPassthroughNormalizer();
 const normalizeClaudeModel = createValidatedNormalizer(SUPPORTED_CLAUDE_MODELS, DEFAULT_CLAUDE_MODEL);
 const normalizeClaudeProvider = createValidatedNormalizer(SUPPORTED_CLAUDE_PROVIDERS, DEFAULT_CLAUDE_PROVIDER, true);
 const normalizeClaudeCodeCommand = createDefaultNormalizer(DEFAULT_CLAUDE_CODE_COMMAND);
 const normalizeClaudeCodeArgs = createDefaultNormalizer(DEFAULT_CLAUDE_CODE_ARGS);
 const normalizeCodexCommand = createDefaultNormalizer(DEFAULT_CODEX_COMMAND);
 const normalizeCodexModel = createValidatedNormalizer(SUPPORTED_CODEX_MODELS, DEFAULT_CODEX_MODEL, true);
-const normalizeOpenaiApiKey = createPassthroughNormalizer();
 const normalizeGeminiCommand = createDefaultNormalizer(DEFAULT_GEMINI_COMMAND);
 const normalizeGeminiModel = createValidatedNormalizer(SUPPORTED_GEMINI_MODELS, DEFAULT_GEMINI_MODEL, true);
-const normalizeGeminiApiKey = createPassthroughNormalizer();
 const normalizeLanguage = createValidatedNormalizer(SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, true);
 
 // ── Paths ──────────────────────────────────────────────────────
@@ -130,14 +127,11 @@ function getDefaultConfig() {
     claudeProvider: DEFAULT_CLAUDE_PROVIDER,
     claudeCodeCommand: DEFAULT_CLAUDE_CODE_COMMAND,
     claudeCodeArgs: DEFAULT_CLAUDE_CODE_ARGS,
-    claudeApiKey: "",
     claudeModel: DEFAULT_CLAUDE_MODEL,
     codexCommand: DEFAULT_CODEX_COMMAND,
     codexModel: DEFAULT_CODEX_MODEL,
-    openaiApiKey: "",
     geminiCommand: DEFAULT_GEMINI_COMMAND,
     geminiModel: DEFAULT_GEMINI_MODEL,
-    geminiApiKey: "",
     language: DEFAULT_LANGUAGE,
     customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
     maxRetries: 10,
@@ -161,14 +155,11 @@ const CONFIG_NORMALIZERS = [
   ["claudeProvider", normalizeClaudeProvider, DEFAULT_CLAUDE_PROVIDER],
   ["claudeCodeCommand", normalizeClaudeCodeCommand, DEFAULT_CLAUDE_CODE_COMMAND],
   ["claudeCodeArgs", normalizeClaudeCodeArgs, DEFAULT_CLAUDE_CODE_ARGS],
-  ["claudeApiKey", normalizeClaudeApiKey, ""],
   ["claudeModel", normalizeClaudeModel, DEFAULT_CLAUDE_MODEL],
   ["codexCommand", normalizeCodexCommand, DEFAULT_CODEX_COMMAND],
   ["codexModel", normalizeCodexModel, DEFAULT_CODEX_MODEL],
-  ["openaiApiKey", normalizeOpenaiApiKey, ""],
   ["geminiCommand", normalizeGeminiCommand, DEFAULT_GEMINI_COMMAND],
   ["geminiModel", normalizeGeminiModel, DEFAULT_GEMINI_MODEL],
-  ["geminiApiKey", normalizeGeminiApiKey, ""],
   ["language", normalizeLanguage, DEFAULT_LANGUAGE],
 ];
 
@@ -303,14 +294,11 @@ module.exports = {
   normalizeClaudeProvider,
   normalizeClaudeCodeCommand,
   normalizeClaudeCodeArgs,
-  normalizeClaudeApiKey,
   normalizeClaudeModel,
   normalizeCodexCommand,
   normalizeCodexModel,
-  normalizeOpenaiApiKey,
   normalizeGeminiCommand,
   normalizeGeminiModel,
-  normalizeGeminiApiKey,
   normalizeLanguage,
   normalizeCustomInstructions,
   normalizeTimeoutSeconds,

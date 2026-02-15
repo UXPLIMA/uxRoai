@@ -7,10 +7,6 @@ import { extractFirstJson } from "../utils.js";
 
 // ── Constants ──────────────────────────────────────────────────────
 
-export const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-export const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-export const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
-
 const DEFAULT_CODE_COMMAND = "claude";
 const DEFAULT_CODE_ARGS = "-p";
 const DEFAULT_CODE_TIMEOUT_MS = 900_000;
@@ -23,14 +19,6 @@ const DEFAULT_GEMINI_MODEL = "gemini-3-pro-preview";
 
 // ── Environment helpers ────────────────────────────────────────────
 
-export function getApiKey() {
-  return process.env.CLAUDE_API_KEY || "";
-}
-
-export function getOpenaiApiKey() {
-  return process.env.OPENAI_API_KEY || "";
-}
-
 export function getModel() {
   return process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 }
@@ -41,10 +29,6 @@ export function getCodexModel() {
 
 export function getCodeCommand() {
   return String(process.env.CLAUDE_CODE_COMMAND || "").trim() || DEFAULT_CODE_COMMAND;
-}
-
-export function getGeminiApiKey() {
-  return process.env.GEMINI_API_KEY || "";
 }
 
 export function getGeminiModel() {
@@ -306,40 +290,3 @@ export async function runCodeCommand({ command, args, timeoutMs, stdinData, env,
   });
 }
 
-// ── SSE Stream Consumer ────────────────────────────────────────────
-
-export async function consumeSSEStream(body, extractDelta, onToken, extractUsage) {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let accumulated = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") continue;
-      try {
-        const event = JSON.parse(jsonStr);
-        const delta = extractDelta(event);
-        if (delta) {
-          accumulated += delta;
-          onToken(accumulated);
-        }
-        if (extractUsage) extractUsage(event);
-      } catch {
-        // skip malformed SSE lines
-      }
-    }
-  }
-
-  if (!accumulated) throw new Error("Streaming response returned no text");
-  return extractFirstJson(accumulated);
-}

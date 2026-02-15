@@ -26,7 +26,7 @@ export function abortJobForTask(taskId) {
 
 async function resolvePlan(prompt, studioContext, history, attachments, onToken, overrides, signal) {
   if (!hasClaudeConfig()) {
-    throw createHttpError("AI provider is not configured. Set CLAUDE_API_KEY (for API mode) or ensure 'claude' CLI is installed and in PATH (check ~/.local/bin).", 503);
+    throw createHttpError("AI provider is not configured. Ensure 'claude', 'codex', or 'gemini' CLI is installed and in PATH.", 503);
   }
 
   const raw = await generatePlanWithClaude(prompt, studioContext, history, attachments, onToken, overrides, signal);

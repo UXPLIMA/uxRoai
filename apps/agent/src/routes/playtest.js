@@ -10,7 +10,7 @@ import { pushDiagLog } from "../providers/dispatcher.js";
 
 async function resolvePlaytest(goal, studioContext, attachments) {
   if (!hasClaudeConfig()) {
-    throw createHttpError("AI provider is not configured. Set CLAUDE_API_KEY (for API mode) or ensure 'claude' CLI is installed and in PATH (check ~/.local/bin).", 503);
+    throw createHttpError("AI provider is not configured. Ensure 'claude', 'codex', or 'gemini' CLI is installed and in PATH.", 503);
   }
 
   const raw = await generatePlaytestWithClaude(goal, studioContext, attachments);

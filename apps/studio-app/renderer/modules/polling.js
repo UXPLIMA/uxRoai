@@ -362,11 +362,8 @@ export async function bootstrapConfig() {
   el.agentUrlInput.value = state.config.agentUrl || "";
   el.claudeCodeCommandInput.value = state.config.claudeCodeCommand || DEFAULT_CODE_COMMAND;
   el.claudeCodeArgsInput.value = state.config.claudeCodeArgs || DEFAULT_CODE_ARGS;
-  el.claudeApiKeyInput.value = state.config.claudeApiKey || "";
   if (el.codexCommandInput) el.codexCommandInput.value = state.config.codexCommand || "codex";
-  if (el.openaiApiKeyInput) el.openaiApiKeyInput.value = state.config.openaiApiKey || "";
   if (el.geminiCommandInput) el.geminiCommandInput.value = state.config.geminiCommand || "gemini";
-  if (el.geminiApiKeyInput) el.geminiApiKeyInput.value = state.config.geminiApiKey || "";
   setModelValue(state.config.claudeModel);
   el.maxRetriesInput.value = state.config.maxRetries ?? 10;
   el.minPlaytestSecondsInput.value = state.config.minPlaytestSeconds ?? 10;
@@ -512,11 +509,8 @@ export function setupGlobalEvents() {
     const claudeProvider = normalizeProvider(el.claudeProviderInput.value || state.config?.claudeProvider);
     const claudeCodeCommand = String(el.claudeCodeCommandInput.value || "").trim();
     const claudeCodeArgs = String(el.claudeCodeArgsInput.value || "").trim();
-    const claudeApiKey = String(el.claudeApiKeyInput.value || "").trim();
     const codexCommand = String(el.codexCommandInput?.value || "").trim();
-    const openaiApiKey = String(el.openaiApiKeyInput?.value || "").trim();
     const geminiCommand = String(el.geminiCommandInput?.value || "").trim();
-    const geminiApiKey = String(el.geminiApiKeyInput?.value || "").trim();
     const family = getProviderFamily();
     const selectedModel = String(el.claudeModelInput.value || "");
     const claudeModel = family === "claude" ? selectedModel : (state.config?.claudeModel || "claude-sonnet-4-5");
@@ -533,9 +527,9 @@ export function setupGlobalEvents() {
     const transparencyEnabled = el.transparencyToggle ? el.transparencyToggle.checked : undefined;
     try {
       state.config = await window.uxRoaiStudio.setAgentSettings({
-        agentUrl, claudeProvider, claudeCodeCommand, claudeCodeArgs, claudeApiKey,
-        claudeModel, codexCommand, codexModel, openaiApiKey,
-        geminiCommand, geminiModel, geminiApiKey,
+        agentUrl, claudeProvider, claudeCodeCommand, claudeCodeArgs,
+        claudeModel, codexCommand, codexModel,
+        geminiCommand, geminiModel,
         language, customInstructions, maxRetries, minPlaytestSeconds, planTimeoutSec,
         claudeCodeTimeoutSec, codexTimeoutSec, geminiTimeoutSec,
         transparencyEnabled,
@@ -550,11 +544,8 @@ export function setupGlobalEvents() {
       el.agentUrlInput.value = state.config.agentUrl;
       el.claudeCodeCommandInput.value = state.config.claudeCodeCommand || DEFAULT_CODE_COMMAND;
       el.claudeCodeArgsInput.value = state.config.claudeCodeArgs || DEFAULT_CODE_ARGS;
-      el.claudeApiKeyInput.value = state.config.claudeApiKey || "";
       if (el.codexCommandInput) el.codexCommandInput.value = state.config.codexCommand || "codex";
-      if (el.openaiApiKeyInput) el.openaiApiKeyInput.value = state.config.openaiApiKey || "";
       if (el.geminiCommandInput) el.geminiCommandInput.value = state.config.geminiCommand || "gemini";
-      if (el.geminiApiKeyInput) el.geminiApiKeyInput.value = state.config.geminiApiKey || "";
       if (el.claudeCodeTimeoutInput) el.claudeCodeTimeoutInput.value = state.config.claudeCodeTimeoutSec || 90;
       if (el.codexTimeoutInput) el.codexTimeoutInput.value = state.config.codexTimeoutSec || 180;
       if (el.geminiTimeoutInput) el.geminiTimeoutInput.value = state.config.geminiTimeoutSec || 300;

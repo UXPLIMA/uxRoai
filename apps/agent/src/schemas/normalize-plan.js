@@ -52,7 +52,7 @@ export function fallbackPlanFromPrompt(prompt) {
   return normalizePlan({
     summary: "Fallback plan generated because Claude is unavailable.",
     warnings: [
-      "CLAUDE_API_KEY missing or model request failed. Fallback mode is active.",
+      "AI CLI not available or model request failed. Fallback mode is active.",
     ],
     actions: [
       {

@@ -34,8 +34,8 @@ function syncDropdownOptions(selectEl, items, labelFn, value) {
 
 export function getProviderFamily() {
   const provider = normalizeProvider(el.claudeProviderInput.value || state.config?.claudeProvider);
-  if (provider === "codex" || provider === "openai-api") return "codex";
-  if (provider === "gemini" || provider === "gemini-api") return "gemini";
+  if (provider === "codex") return "codex";
+  if (provider === "gemini") return "gemini";
   return "claude";
 }
 
@@ -60,8 +60,7 @@ export function syncLanguageOptionsFromConfig(config) {
 }
 
 const PROVIDER_LABEL_MAP = {
-  code: "provider_code", api: "provider_api", codex: "provider_codex",
-  "openai-api": "provider_openai_api", gemini: "provider_gemini", "gemini-api": "provider_gemini_api",
+  code: "provider_code", codex: "provider_codex", gemini: "provider_gemini",
 };
 
 export function syncProviderOptionsFromConfig(config) {
@@ -95,26 +94,16 @@ export function syncComposerModelSelect(config) {
 
 export function applyProviderUi() {
   const provider = normalizeProvider(el.claudeProviderInput.value || state.config?.claudeProvider);
-  const isClaude = provider === "code" || provider === "api";
-  const isCodex = provider === "codex" || provider === "openai-api";
-  const isGemini = provider === "gemini" || provider === "gemini-api";
+  const isClaude = provider === "code";
+  const isCodex = provider === "codex";
+  const isGemini = provider === "gemini";
 
   if (el.claudeFieldsGroup) el.claudeFieldsGroup.style.display = isClaude ? "" : "none";
   if (el.codexFieldsGroup) el.codexFieldsGroup.style.display = isCodex ? "" : "none";
   if (el.geminiFieldsGroup) el.geminiFieldsGroup.style.display = isGemini ? "" : "none";
 
-  el.claudeCodeCommandInput.disabled = provider !== "code";
-  el.claudeCodeArgsInput.disabled = provider !== "code";
-  el.claudeApiKeyInput.disabled = provider !== "api";
-  el.claudeApiKeyInput.placeholder = provider === "code" ? t("apiKeyOptional") : "sk-ant-...";
   el.claudeCodeCommandInput.placeholder = t("codeCommandPlaceholder");
   el.claudeCodeArgsInput.placeholder = t("codeArgsPlaceholder");
-
-  if (el.codexCommandInput) el.codexCommandInput.disabled = provider !== "codex";
-  if (el.openaiApiKeyInput) el.openaiApiKeyInput.disabled = provider !== "openai-api";
-
-  if (el.geminiCommandInput) el.geminiCommandInput.disabled = provider !== "gemini";
-  if (el.geminiApiKeyInput) el.geminiApiKeyInput.disabled = provider !== "gemini-api";
 
   const family = isGemini ? "gemini" : isCodex ? "codex" : "claude";
   syncModelOptionsFromConfig(state.config || {}, family);
@@ -131,12 +120,9 @@ const STATIC_LABELS = [
   ["claudeProviderLabelText", "textContent", "claudeProviderLabel"],
   ["claudeCodeCommandLabelText", "textContent", "claudeCodeCommandLabel"],
   ["claudeCodeArgsLabelText", "textContent", "claudeCodeArgsLabel"],
-  ["claudeApiKeyLabelText", "textContent", "apiKeyLabel"],
   ["claudeModelLabelText", "textContent", "modelLabel"],
   ["codexCommandLabelText", "textContent", "codexCommandLabel"],
-  ["openaiApiKeyLabelText", "textContent", "openaiApiKeyLabel"],
   ["geminiCommandLabelText", "textContent", "geminiCommandLabel"],
-  ["geminiApiKeyLabelText", "textContent", "geminiApiKeyLabel"],
   ["languageLabelText", "textContent", "languageLabel"],
   ["maxRetriesLabelText", "textContent", "maxRetriesLabel"],
   ["minPlaytestSecondsLabelText", "textContent", "minPlaytestSecondsLabel"],

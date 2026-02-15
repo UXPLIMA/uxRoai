@@ -1,17 +1,11 @@
-import { getApiKey, getOpenaiApiKey, getGeminiApiKey, getModel, getCodexModel, getGeminiModel, getCodeTimeoutMs, getGeminiTimeoutMs, getCodexTimeoutMs } from "./base.js";
+import { getModel, getCodexModel, getGeminiModel, getCodeTimeoutMs, getGeminiTimeoutMs, getCodexTimeoutMs } from "./base.js";
 import { callClaudeCodeJson, hasClaudeCodeConfig } from "./claude-code.js";
-import { callClaudeApiJson } from "./claude-api.js";
-import { callOpenaiApiJson } from "./openai-api.js";
 import { callCodexCliJson, hasCodexCliConfig } from "./codex-cli.js";
 import { callGeminiCliJson, hasGeminiCliConfig } from "./gemini-cli.js";
-import { callGeminiApiJson } from "./gemini-api.js";
 
 const PROVIDER_REGISTRY = {
-  api:        { hasConfig: () => Boolean(getApiKey()),       call: callClaudeApiJson },
   codex:      { hasConfig: hasCodexCliConfig,                call: callCodexCliJson },
-  "openai-api": { hasConfig: () => Boolean(getOpenaiApiKey()), call: callOpenaiApiJson },
   gemini:     { hasConfig: hasGeminiCliConfig,                call: callGeminiCliJson },
-  "gemini-api": { hasConfig: () => Boolean(getGeminiApiKey()), call: callGeminiApiJson },
   code:       { hasConfig: hasClaudeCodeConfig,               call: callClaudeCodeJson },
 };
 
@@ -63,8 +57,8 @@ export function hasClaudeConfig() {
 /** Returns the active model based on the current provider */
 export function getActiveModel() {
   const provider = getProvider();
-  if (provider === "gemini" || provider === "gemini-api") return getGeminiModel();
-  if (provider === "codex" || provider === "openai-api") return getCodexModel();
+  if (provider === "gemini") return getGeminiModel();
+  if (provider === "codex") return getCodexModel();
   return getModel();
 }
 
@@ -76,13 +70,9 @@ export function getProviderDiagnostics() {
     configured: PROVIDER_REGISTRY[provider].hasConfig(),
     model: getActiveModel(),
     timeoutMs: provider === "code" ? getCodeTimeoutMs()
-      : provider === "gemini" || provider === "gemini-api" ? getGeminiTimeoutMs()
-      : provider === "codex" || provider === "openai-api" ? getCodexTimeoutMs()
+      : provider === "gemini" ? getGeminiTimeoutMs()
+      : provider === "codex" ? getCodexTimeoutMs()
       : 900_000,
-    apiKeySet: provider === "api" ? Boolean(getApiKey())
-      : provider === "openai-api" ? Boolean(getOpenaiApiKey())
-      : provider === "gemini-api" ? Boolean(getGeminiApiKey())
-      : null,
   };
 }
 

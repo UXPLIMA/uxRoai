@@ -8,14 +8,11 @@ const {
   normalizeClaudeProvider,
   normalizeClaudeCodeCommand,
   normalizeClaudeCodeArgs,
-  normalizeClaudeApiKey,
   normalizeClaudeModel,
   normalizeCodexCommand,
   normalizeCodexModel,
-  normalizeOpenaiApiKey,
   normalizeGeminiCommand,
   normalizeGeminiModel,
-  normalizeGeminiApiKey,
 } = require("./config.js");
 const { DEFAULT_AGENT_URL, DEFAULT_CLAUDE_PROVIDER, DEFAULT_CLAUDE_CODE_COMMAND, DEFAULT_CLAUDE_CODE_ARGS, DEFAULT_CLAUDE_MODEL, DEFAULT_CODEX_COMMAND, DEFAULT_CODEX_MODEL, DEFAULT_GEMINI_COMMAND, DEFAULT_GEMINI_MODEL } = require("./constants.js");
 
@@ -218,14 +215,11 @@ async function startManagedAgent() {
       ["CLAUDE_PROVIDER", normalizeClaudeProvider, config.claudeProvider || DEFAULT_CLAUDE_PROVIDER],
       ["CLAUDE_CODE_COMMAND", normalizeClaudeCodeCommand, config.claudeCodeCommand || DEFAULT_CLAUDE_CODE_COMMAND],
       ["CLAUDE_CODE_ARGS", normalizeClaudeCodeArgs, config.claudeCodeArgs || DEFAULT_CLAUDE_CODE_ARGS],
-      ["CLAUDE_API_KEY", normalizeClaudeApiKey, config.claudeApiKey || ""],
       ["CLAUDE_MODEL", normalizeClaudeModel, config.claudeModel || DEFAULT_CLAUDE_MODEL],
       ["CODEX_COMMAND", normalizeCodexCommand, config.codexCommand || DEFAULT_CODEX_COMMAND],
       ["CODEX_MODEL", normalizeCodexModel, config.codexModel || DEFAULT_CODEX_MODEL],
-      ["OPENAI_API_KEY", normalizeOpenaiApiKey, config.openaiApiKey || ""],
       ["GEMINI_COMMAND", normalizeGeminiCommand, config.geminiCommand || DEFAULT_GEMINI_COMMAND],
       ["GEMINI_MODEL", normalizeGeminiModel, config.geminiModel || DEFAULT_GEMINI_MODEL],
-      ["GEMINI_API_KEY", normalizeGeminiApiKey, config.geminiApiKey || ""],
     ];
     const mergedEnv = { ...process.env };
     mergedEnv.PORT = portFromUrl || "41117";
