@@ -1,0 +1,11 @@
+{
+  "name": "uxroai-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "mcp": "node src/mcp-server.js"
+  }
+}
+

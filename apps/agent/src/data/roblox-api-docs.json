@@ -1,0 +1,416 @@
+[
+  {
+    "keywords": [
+      "tween",
+      "tweenservice",
+      "animate",
+      "animation",
+      "lerp",
+      "transition",
+      "ease",
+      "fade",
+      "slide"
+    ],
+    "doc": "TweenService: Animates properties over time.\n  local ts = game:GetService(\"TweenService\")\n  local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, repeatCount, reverses, delayTime)\n  local tween = ts:Create(instance, info, {Property = targetValue})\n  tween:Play()\n  tween.Completed:Connect(function() ... end)\n  -- Supported types: number, Vector3, Vector2, UDim2, UDim, Color3, CFrame, NumberSequence, ColorSequence\n  -- EasingStyles: Linear, Quad, Cubic, Quart, Quint, Sine, Exponential, Circular, Elastic, Back, Bounce\n  -- RepeatCount: 0=once, -1=infinite. Reverses: true=ping-pong\n  -- Use for: GUI animations, door opening, color changes, size transitions, camera movement"
+  },
+  {
+    "keywords": [
+      "sound",
+      "audio",
+      "music",
+      "play",
+      "soundservice",
+      "volume"
+    ],
+    "doc": "Sound: Play audio in Roblox.\n  local sound = Instance.new(\"Sound\")\n  sound.SoundId = \"rbxassetid://ASSET_ID\"\n  sound.Volume = 0.5\n  sound.Looped = false\n  sound.Parent = workspace -- or part for 3D positional sound\n  sound:Play()\n  -- Events: sound.Ended, sound.Loaded\n  -- SoundService:PlayLocalSound(sound) for client-only playback\n  -- SoundGroup: group sounds and control volume together\n  -- RollOffMode: InverseTapered (default), Linear, Inverse for 3D sound falloff"
+  },
+  {
+    "keywords": [
+      "gui",
+      "ui",
+      "screengui",
+      "frame",
+      "button",
+      "textbutton",
+      "imagebutton",
+      "textlabel",
+      "imagelabel",
+      "scrollingframe",
+      "hud",
+      "menu",
+      "interface"
+    ],
+    "doc": "GUI Classes and Best Practices:\n  ScreenGui → parent to StarterGui (cloned to PlayerGui at runtime)\n    ResetOnSpawn = false (preserve across respawns)\n    ZIndexBehavior = Enum.ZIndexBehavior.Sibling\n  Frame: container. Size=UDim2.new(scaleX,offsetX,scaleY,offsetY)\n  TextButton/ImageButton: .Activated event (preferred over .MouseButton1Click)\n  TextLabel/ImageLabel: display only\n  TextBox: text input, .FocusLost:Connect(function(enterPressed) end)\n  ScrollingFrame: set CanvasSize for scrollable content, AutomaticCanvasSize for auto-sizing\n  Layout: UIListLayout (row/column), UIGridLayout (grid), UIPageLayout (pages), UITableLayout\n  Decoration: UICorner (CornerRadius), UIPadding, UIStroke (border), UIGradient\n  Constraints: UIAspectRatioConstraint, UITextSizeConstraint, UISizeConstraint\n  Centering: AnchorPoint=Vector2.new(0.5,0.5) + Position=UDim2.fromScale(0.5,0.5)\n  ALWAYS use Scale for positioning (responsive). Offset only for pixel padding/corners.\n  ALWAYS set TextScaled=true with UITextSizeConstraint for responsive text."
+  },
+  {
+    "keywords": [
+      "prompt",
+      "proximityprompt",
+      "clickdetector",
+      "interact",
+      "interaction",
+      "proximity"
+    ],
+    "doc": "ProximityPrompt: Modern interaction system.\n  local pp = Instance.new(\"ProximityPrompt\")\n  pp.ActionText = \"Open\"\n  pp.ObjectText = \"Door\"\n  pp.MaxActivationDistance = 10\n  pp.HoldDuration = 0 -- seconds to hold, 0 = instant\n  pp.RequiresLineOfSight = true\n  pp.Parent = part\n  pp.Triggered:Connect(function(player) ... end)\n  pp.PromptShown:Connect(function(player) ... end)\n  -- Style: pp.Style = Enum.ProximityPromptStyle.Default or Custom\n  -- ClickDetector (legacy): .MouseClick:Connect(function(player) end)\n  -- Prefer ProximityPrompt over ClickDetector for new projects."
+  },
+  {
+    "keywords": [
+      "datastore",
+      "data",
+      "save",
+      "load",
+      "persist",
+      "storage",
+      "database"
+    ],
+    "doc": "DataStoreService: Persistent data storage (server-side only).\n  local dss = game:GetService(\"DataStoreService\")\n  local store = dss:GetDataStore(\"PlayerData\")\n  -- Read: local data = store:GetAsync(\"key\")\n  -- Write: store:SetAsync(\"key\", value)\n  -- Update: store:UpdateAsync(\"key\", function(old) return newValue end)\n  -- Rate limits: 60+numPlayers*10 requests/min per key\n  -- Best practices:\n  --   Use UpdateAsync over SetAsync to prevent data loss\n  --   Implement retry logic with pcall\n  --   Save on PlayerRemoving and game:BindToClose\n  --   Cache data in-memory, save periodically\n  -- OrderedDataStore: for leaderboards (GetSortedAsync)"
+  },
+  {
+    "keywords": [
+      "player",
+      "players",
+      "character",
+      "humanoid",
+      "health",
+      "walkspeed",
+      "jump",
+      "respawn"
+    ],
+    "doc": "Players and Characters:\n  game.Players.PlayerAdded:Connect(function(player)\n    player.CharacterAdded:Connect(function(char)\n      local humanoid = char:WaitForChild(\"Humanoid\")\n      humanoid.WalkSpeed = 16 -- default\n      humanoid.JumpHeight = 7.2 -- default (or JumpPower = 50)\n      humanoid.MaxHealth = 100\n      humanoid.Health = 100\n    end)\n  end)\n  -- player:LoadCharacter() to force respawn\n  -- humanoid.Died:Connect(function() end)\n  -- humanoid:TakeDamage(amount) -- respects ForceField\n  -- humanoid:GetState() / humanoid:ChangeState(Enum.HumanoidStateType.Jumping)\n  -- player.leaderstats for leaderboard values"
+  },
+  {
+    "keywords": [
+      "tool",
+      "equip",
+      "backpack",
+      "inventory",
+      "weapon",
+      "sword"
+    ],
+    "doc": "Tools: Items players can equip from Backpack.\n  local tool = Instance.new(\"Tool\")\n  tool.Name = \"Sword\"\n  tool.RequiresHandle = true -- needs a Part named \"Handle\" inside\n  tool.CanBeDropped = true\n  tool.Parent = player.Backpack -- or StarterPack for all players\n  tool.Activated:Connect(function() ... end) -- left click / tap\n  tool.Equipped:Connect(function() ... end)\n  tool.Unequipped:Connect(function() ... end)\n  -- Tool.Grip: CFrame offset for held position\n  -- Equipped tool moves to player.Character"
+  },
+  {
+    "keywords": [
+      "light",
+      "lighting",
+      "pointlight",
+      "spotlight",
+      "surfacelight",
+      "atmosphere",
+      "bloom",
+      "sky",
+      "fog",
+      "dark"
+    ],
+    "doc": "Lighting and Visual Effects:\n  game.Lighting.ClockTime = 14 -- 0-24 hours\n  game.Lighting.Brightness = 2\n  game.Lighting.Ambient = Color3.fromRGB(127,127,127)\n  game.Lighting.OutdoorAmbient = Color3.fromRGB(127,127,127)\n  -- Light objects (parent to Part):\n  --   PointLight: omnidirectional, Range, Brightness, Color\n  --   SpotLight: directional cone, Angle, Range\n  --   SurfaceLight: emits from a face, Face property\n  -- Post effects (parent to Lighting):\n  --   BloomEffect: Size, Intensity, Threshold\n  --   BlurEffect: Size\n  --   ColorCorrectionEffect: Brightness, Contrast, Saturation, TintColor\n  --   SunRaysEffect: Intensity, Spread\n  --   DepthOfFieldEffect: FarIntensity, FocusDistance, InFocusRadius, NearIntensity\n  -- Atmosphere: Density, Offset, Color, Decay, Glare, Haze\n  -- Sky: SkyboxBk/Dn/Ft/Lf/Rt/Up, SunAngularSize, MoonAngularSize"
+  },
+  {
+    "keywords": [
+      "particle",
+      "emitter",
+      "beam",
+      "trail",
+      "effect",
+      "vfx",
+      "sparkle",
+      "fire",
+      "smoke"
+    ],
+    "doc": "Particle Effects:\n  ParticleEmitter: parent to Part or Attachment\n    .Rate = 20 -- particles per second\n    .Lifetime = NumberRange.new(1, 3)\n    .Speed = NumberRange.new(5, 10)\n    .Size = NumberSequence.new({NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(1,0)})\n    .Color = ColorSequence.new(Color3.new(1,1,0), Color3.new(1,0,0))\n    .Texture = \"rbxassetid://ID\"\n    :Emit(count) -- burst emission\n  Beam: textured beam between two Attachments\n    .Attachment0, .Attachment1, .Texture, .Width0, .Width1, .Color\n  Trail: follows Attachment movement\n    .Attachment0, .Attachment1, .Lifetime, .Color, .WidthScale\n  -- Legacy effects (still usable): Fire, Smoke, Sparkles (parent to Part)"
+  },
+  {
+    "keywords": [
+      "physics",
+      "bodyforce",
+      "bodyvelocity",
+      "constraint",
+      "weld",
+      "spring",
+      "rope",
+      "hinge",
+      "motor",
+      "force",
+      "velocity"
+    ],
+    "doc": "Physics Constraints (modern — use these, NOT deprecated Body movers):\n  WeldConstraint: rigidly connects two parts (no relative movement)\n  HingeConstraint: rotational joint (doors, wheels). ActuatorType: None/Motor/Servo\n  SpringConstraint: bouncy connection. FreeLength, Stiffness, Damping\n  RopeConstraint: flexible max-length connection. Length, Restitution\n  RodConstraint: rigid fixed-length connection\n  AlignPosition: smooth force-based position alignment (replaces BodyPosition)\n  AlignOrientation: smooth force-based orientation alignment (replaces BodyGyro)\n  LinearVelocity: apply velocity (replaces deprecated BodyVelocity)\n  AngularVelocity: apply rotational velocity\n  VectorForce: constant force (replaces deprecated BodyForce)\n  -- DEPRECATED (do NOT use): BodyVelocity, BodyForce, BodyPosition, BodyGyro\n  -- Constraints need Attachments: create Attachment as child of Part, set constraint.Attachment0/1\n  -- Part properties: Anchored (immovable), CanCollide, CanTouch (Touched events), CanQuery (raycasts), Massless"
+  },
+  {
+    "keywords": [
+      "remote",
+      "remoteevent",
+      "remotefunction",
+      "server",
+      "client",
+      "fire",
+      "invoke",
+      "replicatedstorage",
+      "network"
+    ],
+    "doc": "Client-Server Communication:\n  RemoteEvent: one-way communication\n    Server: remote.OnServerEvent:Connect(function(player, ...) end)\n    Client→Server: remote:FireServer(...)\n    Server→Client: remote:FireClient(player, ...) or :FireAllClients(...)\n  RemoteFunction: two-way (request/response)\n    remote.OnServerInvoke = function(player, ...) return result end\n    Client: local result = remote:InvokeServer(...)\n  BindableEvent: same-context communication (server↔server or client↔client)\n    bindable.Event:Connect(function(...) end)\n    bindable:Fire(...)\n  -- Place remotes in ReplicatedStorage for both sides to access\n  -- ALWAYS validate inputs on server — never trust client data\n  -- UnreliableRemoteEvent: for frequent updates (position sync) where occasional loss is OK"
+  },
+  {
+    "keywords": [
+      "collision",
+      "touched",
+      "collisiongroup",
+      "raycast",
+      "spatial",
+      "hit",
+      "detect"
+    ],
+    "doc": "Collision and Raycasting:\n  part.Touched:Connect(function(otherPart) end)\n  part.TouchEnded:Connect(function(otherPart) end)\n  -- ALWAYS debounce Touched events to prevent rapid-fire\n  -- Raycast:\n  local params = RaycastParams.new()\n  params.FilterType = Enum.RaycastFilterType.Exclude\n  params.FilterDescendantsInstances = {character}\n  local result = workspace:Raycast(origin, direction, params)\n  if result then\n    print(result.Instance, result.Position, result.Normal, result.Material)\n  end\n  -- Spatial queries:\n  workspace:GetPartBoundsInBox(cframe, size, overlapParams)\n  workspace:GetPartBoundsInRadius(position, radius, overlapParams)\n  -- CollisionGroups: PhysicsService:RegisterCollisionGroup(\"name\")\n  --   PhysicsService:CollisionGroupSetCollidable(\"GroupA\", \"GroupB\", false)"
+  },
+  {
+    "keywords": [
+      "billboard",
+      "surfacegui",
+      "3d",
+      "overhead",
+      "nametag",
+      "healthbar",
+      "worldgui"
+    ],
+    "doc": "3D GUI (in-world UI):\n  BillboardGui: always faces camera, parent to Part or Attachment\n    .Size = UDim2.new(4,0,1,0) -- studs when Adornee is set\n    .StudsOffset = Vector3.new(0,3,0) -- above part\n    .AlwaysOnTop = true -- renders through walls\n    .Adornee = part -- or set Parent directly to part\n    .MaxDistance = 50 -- hide beyond this distance\n  SurfaceGui: fixed on a Part face\n    .Face = Enum.NormalId.Front\n    .Parent = part\n    .SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud\n    .PixelsPerStud = 50\n  -- Health bar pattern: BillboardGui > Frame(bg) > Frame(fill)\n  --   Update fill.Size = UDim2.new(health/maxHealth, 0, 1, 0)"
+  },
+  {
+    "keywords": [
+      "module",
+      "modulescript",
+      "require",
+      "import",
+      "shared",
+      "config"
+    ],
+    "doc": "ModuleScript: Reusable code modules.\n  -- Define module (in ReplicatedStorage or ServerStorage):\n  local MyModule = {}\n  function MyModule.greet(name) return \"Hello \" .. name end\n  return MyModule\n  -- Use in any Script/LocalScript:\n  local MyModule = require(game.ReplicatedStorage.MyModule)\n  print(MyModule.greet(\"World\"))\n  -- OOP class pattern:\n  local MyClass = {}\n  MyClass.__index = MyClass\n  function MyClass.new(name)\n    return setmetatable({name = name}, MyClass)\n  end\n  function MyClass:getName() return self.name end\n  return MyClass\n  -- Use: local obj = MyClass.new(\"Player\")"
+  },
+  {
+    "keywords": [
+      "spawn",
+      "respawn",
+      "kill",
+      "death",
+      "reset",
+      "checkpoint",
+      "spawnlocation"
+    ],
+    "doc": "Spawning and Death:\n  SpawnLocation: ClassName \"SpawnLocation\"\n    .TeamColor for team-specific spawns\n    .AllowTeamChangeOnTouch = true\n    .Neutral = true (any team can use)\n    .Duration = 0 (instant platform despawn)\n  -- Force respawn: player:LoadCharacter()\n  -- Detect death: humanoid.Died:Connect(function() end)\n  -- Custom respawn: set StarterPlayer.CharacterAutoLoads = false\n  -- Custom checkpoint: update player.RespawnLocation = spawnLocation\n  -- Kill brick pattern:\n  part.Touched:Connect(function(hit)\n    local hum = hit.Parent:FindFirstChildWhichIsA(\"Humanoid\")\n    if hum then hum.Health = 0 end\n  end)"
+  },
+  {
+    "keywords": [
+      "team",
+      "teams",
+      "teamcolor",
+      "versus",
+      "pvp"
+    ],
+    "doc": "Teams:\n  local team = Instance.new(\"Team\")\n  team.Name = \"Blue\"\n  team.TeamColor = BrickColor.new(\"Bright blue\")\n  team.AutoAssignable = true\n  team.Parent = game:GetService(\"Teams\")\n  -- Assign: player.Team = team (or player.TeamColor)\n  -- Events: team.PlayerAdded, team.PlayerRemoved\n  -- :GetPlayers() returns team members"
+  },
+  {
+    "keywords": [
+      "leaderstats",
+      "leaderboard",
+      "stat",
+      "score",
+      "coin",
+      "money",
+      "currency",
+      "points"
+    ],
+    "doc": "Leaderstats (in-game leaderboard — auto-displays in playerlist):\n  game.Players.PlayerAdded:Connect(function(player)\n    local ls = Instance.new(\"Folder\")\n    ls.Name = \"leaderstats\" -- MUST be exactly \"leaderstats\"\n    ls.Parent = player\n    local coins = Instance.new(\"IntValue\")\n    coins.Name = \"Coins\"\n    coins.Value = 0\n    coins.Parent = ls\n    -- StringValue for text stats, NumberValue for decimals\n  end)\n  -- Read/update: player.leaderstats.Coins.Value += amount\n  -- Client reads: player.leaderstats.Coins.Changed:Connect(function(newVal) end)"
+  },
+  {
+    "keywords": [
+      "pathfinding",
+      "pathfindingservice",
+      "npc",
+      "ai",
+      "navigate",
+      "enemy",
+      "patrol",
+      "follow"
+    ],
+    "doc": "PathfindingService: AI navigation.\n  local PathfindingService = game:GetService(\"PathfindingService\")\n  local path = PathfindingService:CreatePath({\n    AgentRadius = 2,\n    AgentHeight = 5,\n    AgentCanJump = true,\n    AgentCanClimb = false,\n  })\n  path:ComputeAsync(startPos, endPos)\n  if path.Status == Enum.PathStatus.Success then\n    local waypoints = path:GetWaypoints()\n    for _, wp in waypoints do\n      humanoid:MoveTo(wp.Position)\n      humanoid.MoveToFinished:Wait()\n    end\n  end\n  -- path.Blocked:Connect(function(blockedIndex) ... end) for dynamic re-pathing\n  -- Use for NPC patrol, enemy chasing, quest NPCs"
+  },
+  {
+    "keywords": [
+      "collection",
+      "collectionservice",
+      "tag",
+      "tagged",
+      "gettag",
+      "instance"
+    ],
+    "doc": "CollectionService: Tag-based instance management.\n  local CS = game:GetService(\"CollectionService\")\n  -- Add tag: CS:AddTag(instance, \"Coin\")\n  -- Remove tag: CS:RemoveTag(instance, \"Coin\")\n  -- Get all tagged: CS:GetTagged(\"Coin\") returns array\n  -- Check: CS:HasTag(instance, \"Coin\") returns bool\n  -- Listen: CS:GetInstanceAddedSignal(\"Coin\"):Connect(function(inst) end)\n  -- Listen: CS:GetInstanceRemovedSignal(\"Coin\"):Connect(function(inst) end)\n  -- Pattern: tag all coins, loop with for _, coin in CS:GetTagged(\"Coin\") do ... end"
+  },
+  {
+    "keywords": [
+      "camera",
+      "cameratype",
+      "cutscene",
+      "view",
+      "zoom",
+      "firstperson",
+      "thirdperson"
+    ],
+    "doc": "Camera Control:\n  local camera = workspace.CurrentCamera\n  camera.CameraType = Enum.CameraType.Scriptable -- take manual control\n  camera.CFrame = CFrame.new(position, lookAt)\n  -- Smooth camera: TweenService on camera.CFrame\n  -- Reset: camera.CameraType = Enum.CameraType.Custom\n  -- Camera.FieldOfView: 70 (default), lower = zoom in\n  -- Cutscene pattern: set Scriptable, tween through CFrames, set back to Custom\n  -- First person: player.CameraMode = Enum.CameraMode.LockFirstPerson\n  -- Max zoom: player.CameraMaxZoomDistance, player.CameraMinZoomDistance"
+  },
+  {
+    "keywords": [
+      "debris",
+      "cleanup",
+      "temporary",
+      "remove",
+      "timer",
+      "autoremove"
+    ],
+    "doc": "Debris Service: Auto-cleanup of temporary objects.\n  local Debris = game:GetService(\"Debris\")\n  Debris:AddItem(instance, lifetime) -- removes after lifetime seconds\n  -- Use for: particle effects, projectiles, temporary UI, sound objects\n  -- Example: Debris:AddItem(explosion, 3)\n  -- Better than task.delay + :Destroy() because it's engine-managed"
+  },
+  {
+    "keywords": [
+      "input",
+      "keyboard",
+      "mouse",
+      "touch",
+      "gamepad",
+      "userinputservice",
+      "contextaction"
+    ],
+    "doc": "Input Handling:\n  -- UserInputService: raw input detection (client-only)\n  local UIS = game:GetService(\"UserInputService\")\n  UIS.InputBegan:Connect(function(input, gameProcessed)\n    if gameProcessed then return end -- skip if typing in chat\n    if input.KeyCode == Enum.KeyCode.E then ... end\n  end)\n  -- ContextActionService: context-aware input binding (preferred for game actions)\n  local CAS = game:GetService(\"ContextActionService\")\n  CAS:BindAction(\"Honk\", function(name, state, input)\n    if state == Enum.UserInputState.Begin then ... end\n  end, true, Enum.KeyCode.H) -- true = show mobile button\n  CAS:UnbindAction(\"Honk\") -- when leaving context\n  -- Use CAS for: ability keys, vehicle controls, tool actions\n  -- Use UIS for: movement, camera, global hotkeys"
+  },
+  {
+    "keywords": [
+      "model",
+      "primarypart",
+      "cframe",
+      "weld",
+      "assembly",
+      "group"
+    ],
+    "doc": "Models and Assemblies:\n  Model: groups parts together\n    .PrimaryPart: the \"root\" part (REQUIRED for :SetPrimaryPartCFrame/:PivotTo)\n    model:PivotTo(cframe) -- moves entire model\n    model:GetBoundingBox() -- returns CFrame, Size\n    model:GetExtentsSize() -- returns Size\n  -- Welding: WeldConstraint connects parts rigidly\n  --   weld.Part0 = basePart, weld.Part1 = otherPart\n  --   All welded parts move as one assembly\n  -- Motor6D: animated joint (character limbs, moving parts)\n  -- PivotOffset: adjusts the pivot point for :PivotTo()"
+  },
+  {
+    "keywords": [
+      "runservice",
+      "heartbeat",
+      "renderstepped",
+      "stepped",
+      "loop",
+      "update",
+      "frame"
+    ],
+    "doc": "RunService: Per-frame updates.\n  local RunService = game:GetService(\"RunService\")\n  -- Server + Client:\n  RunService.Heartbeat:Connect(function(deltaTime) ... end) -- after physics\n  RunService.Stepped:Connect(function(time, deltaTime) ... end) -- before physics\n  -- Client only:\n  RunService.RenderStepped:Connect(function(deltaTime) ... end) -- before render\n  -- Use Heartbeat for: spinning parts, bobbing effects, NPC AI updates\n  -- Use RenderStepped for: camera effects, UI updates tied to frame\n  -- NEVER use while true do loops for animations — use RunService or TweenService\n  -- RunService:IsClient(), :IsServer(), :IsStudio() for environment checks"
+  },
+  {
+    "keywords": [
+      "tween",
+      "tweeninfo",
+      "easing",
+      "bounce",
+      "elastic",
+      "cubic"
+    ],
+    "doc": "TweenInfo Reference:\n  TweenInfo.new(time, easingStyle, easingDirection, repeatCount, reverses, delayTime)\n  -- time: duration in seconds\n  -- easingStyle: Linear, Quad, Cubic, Quart, Quint, Sine, Exponential, Circular, Elastic, Back, Bounce\n  -- easingDirection: In, Out, InOut\n  -- repeatCount: 0=once, -1=forever\n  -- reverses: true=plays forward then backward\n  -- delayTime: seconds before starting\n  -- Common combos:\n  --   Smooth: Quad/Out\n  --   Bouncy: Bounce/Out\n  --   Elastic: Elastic/Out\n  --   Linear: Linear/InOut\n  --   Snappy: Back/Out (slight overshoot)"
+  },
+  {
+    "keywords": [
+      "task",
+      "wait",
+      "spawn",
+      "delay",
+      "defer",
+      "cancel",
+      "thread",
+      "coroutine",
+      "async",
+      "yield",
+      "schedule"
+    ],
+    "doc": "task library (thread scheduling — COMPLETE reference):\n  task.wait(seconds) — yields current thread for seconds, returns actual elapsed time\n  task.spawn(fn, ...) — runs function immediately in a new thread\n  task.delay(seconds, fn, ...) — runs function after delay in a new thread\n  task.defer(fn, ...) — runs function at next resumption cycle\n  task.cancel(thread) — cancels a thread created by task.spawn/delay/defer\n  task.synchronize() — switch to serial execution (Parallel Luau)\n  task.desynchronize() — switch to parallel execution (Parallel Luau)\n  ⚠️ THESE DO NOT EXIST: task.time(), task.clock(), task.elapsed(), task.run(), task.sleep()\n  ⚠️ DEPRECATED (never use): wait(), spawn(), delay() — use task.wait/spawn/delay instead\n  -- For time measurement, use os.clock() (high-res monotonic) or tick() (Unix epoch float)\n  -- For integer epoch: os.time()\n  -- Example timing pattern:\n  local startTime = os.clock()\n  -- ... do work ...\n  local elapsed = os.clock() - startTime"
+  },
+  {
+    "keywords": [
+      "time",
+      "clock",
+      "tick",
+      "timer",
+      "elapsed",
+      "duration",
+      "cooldown",
+      "interval",
+      "timeout",
+      "os.clock",
+      "os.time"
+    ],
+    "doc": "Time Functions in Luau:\n  os.clock() — high-resolution monotonic time in seconds (best for measuring elapsed time / cooldowns)\n  tick() — Unix epoch time as float (seconds since Jan 1 1970). Works but os.clock() preferred for intervals.\n  os.time() — Unix epoch time as integer (seconds since Jan 1 1970)\n  os.date(format, time) — format time as string\n  workspace:GetServerTimeNow() — server-synchronized time (useful for synced events)\n  ⚠️ task.time() DOES NOT EXIST — use os.clock() instead\n  ⚠️ DateTime is for display only: DateTime.now(), :FormatLocalTime(), :ToIsoDate()\n  -- Cooldown pattern:\n  local lastUse = 0\n  local COOLDOWN = 3\n  local function canUse()\n    if os.clock() - lastUse < COOLDOWN then return false end\n    lastUse = os.clock()\n    return true\n  end\n  -- Timer pattern:\n  local startTime = os.clock()\n  RunService.Heartbeat:Connect(function()\n    local elapsed = os.clock() - startTime\n    timerLabel.Text = string.format(\"%.1f\", elapsed)\n  end)"
+  },
+  {
+    "keywords": [
+      "math",
+      "random",
+      "clamp",
+      "lerp",
+      "noise",
+      "floor",
+      "ceil",
+      "abs",
+      "sin",
+      "cos",
+      "pi",
+      "huge"
+    ],
+    "doc": "math library in Luau:\n  math.random() — float in [0,1)\n  math.random(n) — integer in [1,n]\n  math.random(m, n) — integer in [m,n] (⚠️ m and n MUST be integers!)\n  ⚠️ math.random(0.5, 2.0) is WRONG — for random floats: math.random() * (max - min) + min\n  math.clamp(value, min, max) — restrict value to range\n  math.abs(x), math.floor(x), math.ceil(x), math.round(x)\n  math.sin(x), math.cos(x), math.tan(x) — x in radians\n  math.rad(degrees), math.deg(radians) — conversion\n  math.noise(x, y?, z?) — Perlin noise in [-0.5, 0.5] (terrain, randomized offsets)\n  math.huge — infinity constant\n  math.pi — 3.14159...\n  -- Random with seed: math.randomseed(os.clock()) — call once at start\n  -- Luau also has Random.new(seed):NextNumber(min, max) for float ranges\n  local rng = Random.new()\n  rng:NextNumber(0.5, 2.0) -- correct way for random float range\n  rng:NextInteger(1, 10) -- correct way for random integer range"
+  },
+  {
+    "keywords": [
+      "string",
+      "pattern",
+      "find",
+      "match",
+      "gsub",
+      "format",
+      "split",
+      "sub",
+      "len",
+      "interpolation",
+      "template"
+    ],
+    "doc": "String operations in Luau:\n  string.find(s, pattern, init?, plain?) — returns start, end indices\n  string.match(s, pattern) — returns first capture\n  string.gmatch(s, pattern) — iterator over all matches\n  string.gsub(s, pattern, replacement, n?) — replace pattern occurrences\n  string.format(fmt, ...) — C-style formatting: %d (int), %f (float), %s (string), %q (quoted)\n  string.sub(s, i, j?) — substring\n  string.len(s) or #s — length\n  string.rep(s, n) — repeat string n times\n  string.split(s, separator) — returns array (Roblox extension, not standard Lua)\n  string.byte(s), string.char(n) — character/code conversion\n  -- Luau string interpolation (backtick syntax):\n  local msg = `Player {player.Name} scored {score} points`\n  -- ⚠️ Luau does NOT have regex. Use Lua patterns: %d (digit), %a (letter), %w (alnum), %s (space), %p (punct)\n  -- Pattern anchors: ^ (start), $ (end). Quantifiers: * (0+), + (1+), - (0+ lazy), ? (0 or 1)"
+  },
+  {
+    "keywords": [
+      "instance",
+      "new",
+      "create",
+      "clone",
+      "destroy",
+      "parent",
+      "findchild",
+      "waitforchild",
+      "getchildren",
+      "getdescendants"
+    ],
+    "doc": "Instance manipulation:\n  Instance.new(\"ClassName\") — create new instance\n  ⚠️ Instance.new(\"ClassName\", parent) — second arg is DEPRECATED. Set .Parent after configuring all properties.\n  instance:Clone() — deep copy (preserves all properties and children)\n  instance:Destroy() — permanently removes (sets Parent to nil, locks)\n  instance:FindFirstChild(\"Name\", recursive?) — nil if not found\n  instance:FindFirstChildWhichIsA(\"ClassName\", recursive?) — by class\n  instance:FindFirstChildOfClass(\"ClassName\") — exact class match (no inheritance)\n  instance:WaitForChild(\"Name\", timeout?) — yields until found (⚠️ CLIENT ONLY for replicated objects)\n  instance:GetChildren() — returns array of direct children\n  instance:GetDescendants() — returns array of ALL descendants\n  instance:IsA(\"ClassName\") — inheritance check (Part:IsA(\"BasePart\") = true)\n  instance:GetAttribute(\"name\"), :SetAttribute(\"name\", value) — custom attributes\n  instance:GetTags(), :AddTag(\"tag\"), :RemoveTag(\"tag\") — CollectionService tags\n  -- Correct creation pattern:\n  local part = Instance.new(\"Part\")\n  part.Size = Vector3.new(4, 1, 4)\n  part.Anchored = true\n  part.Parent = workspace  -- set Parent LAST"
+  },
+  {
+    "keywords": [
+      "chat",
+      "textchat",
+      "message",
+      "filter",
+      "chatservice"
+    ],
+    "doc": "TextChatService (modern chat system):\n  local TextChatService = game:GetService(\"TextChatService\")\n  -- System message: TextChatService.TextChannels.RBXGeneral:DisplaySystemMessage(\"text\")\n  -- Custom command: TextChatService.OnIncomingMessage = function(message)\n  --   local props = Instance.new(\"TextChatMessageProperties\")\n  --   props.Text = message.Text:gsub(\"bad\", \"***\")\n  --   return props\n  -- end\n  -- Chat bubbles: TextChatService.BubbleDisplayOrder\n  -- Legacy ChatService is deprecated — use TextChatService"
+  },
+  {
+    "keywords": [
+      "marketplace",
+      "gamepass",
+      "devproduct",
+      "purchase",
+      "monetize",
+      "shop",
+      "buy"
+    ],
+    "doc": "MarketplaceService: In-game purchases.\n  local MPS = game:GetService(\"MarketplaceService\")\n  -- Check gamepass ownership:\n  local owns = MPS:UserOwnsGamePassAsync(player.UserId, gamePassId)\n  -- Prompt purchase:\n  MPS:PromptGamePassPurchase(player, gamePassId)\n  MPS.PromptGamePassPurchaseFinished:Connect(function(player, id, purchased)\n    if purchased then ... end\n  end)\n  -- Developer products (consumables):\n  MPS:PromptProductPurchase(player, productId)\n  MPS.ProcessReceipt = function(receiptInfo)\n    -- Grant item, return Enum.ProductPurchaseDecision.PurchaseGranted\n  end"
+  }
+]

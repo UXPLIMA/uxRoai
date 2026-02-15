@@ -1,0 +1,17 @@
+{
+  "name": "uxroai",
+  "private": true,
+  "workspaces": [
+    "apps/agent",
+    "apps/studio-app",
+    "apps/studio-plugin"
+  ],
+  "scripts": {
+    "agent:start": "npm -w apps/agent start",
+    "plugin:build": "npm -w apps/studio-plugin run build",
+    "plugin:install": "npm -w apps/studio-plugin run install:plugin",
+    "app:dev": "npm -w apps/studio-app start",
+    "app:dist": "npm -w apps/studio-app run dist",
+    "lint": "eslint apps/agent/src apps/studio-app"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "uxroai-studio-app",
+  "private": true,
+  "version": "0.1.9",
+  "description": "AI Copilot for Roblox Studio",
+  "main": "main.js",
+  "author": "UXPLIMA",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UXPLIMA/uxRoai.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.uxplima.uxroai",
+    "productName": "uxRoai Studio",
+    "publish": {
+      "provider": "github",
+      "owner": "UXPLIMA",
+      "repo": "uxRoai"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "src/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../agent",
+        "to": "agent",
+        "filter": [
+          "**/*",
+          "!node_modules",
+          "!.env"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png",
+      "category": "Development"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.developer-tools"
+    }
+  },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "^25.1.8"
+  }
+}

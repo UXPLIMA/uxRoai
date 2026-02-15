@@ -1,0 +1,108 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set version from git tag
+        working-directory: apps/studio-app
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "Setting version to $TAG"
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '$TAG';
+            require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Install agent production dependencies
+        working-directory: apps/agent
+        run: npm install --omit=dev
+
+      - name: Build Studio Plugin
+        working-directory: apps/studio-plugin
+        run: node scripts/build-plugin.js
+
+      - name: Build Electron app
+        working-directory: apps/studio-app
+        run: npx electron-builder --${{ matrix.platform }} --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Desktop App
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: |
+            apps/studio-app/release/*.exe
+            apps/studio-app/release/*.AppImage
+            apps/studio-app/release/*.dmg
+            apps/studio-app/release/*.yml
+          if-no-files-found: ignore
+
+      - name: Upload Studio Plugin
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-plugin
+          path: apps/studio-plugin/dist/*.lua
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && !cancelled()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f 2>/dev/null || echo "No artifacts found"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.AppImage
+            artifacts/**/*.dmg
+            artifacts/**/*.lua
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
